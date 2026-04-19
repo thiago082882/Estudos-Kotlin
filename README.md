@@ -1,525 +1,441 @@
-[ebook_android_moderno_kotlin_jetpack.md](https://github.com/user-attachments/files/26862014/ebook_android_moderno_kotlin_jetpack.md)
-# Estudos-Kotlin# GUIA DEFINITIVO DE DESENVOLVIMENTO ANDROID MODERNO
-
-## Kotlin, Jetpack Compose e Arquitetura Profissional
-
----
-
-**[CAPA]**
-
-```
-┌─────────────────────────────────────────┐
-│                                         │
-│     GUIA DEFINITIVO DE                  │
-│     DESENVOLVIMENTO ANDROID             │
-│     MODERNO                             │
-│                                         │
-│        Kotlin + Jetpack Compose         │
-│        + Arquitetura Profissional        │
-│                                         │
-│     Do Iniciante ao Avançado            │
-│                                         │
-│           ─────────────                 │
-│                                         │
-│     [ilustração: smartphone com         │
-│      tela de app Android moderna        │
-│      mostrando UI bonita]               │
-│                                         │
-│                                         │
-└─────────────────────────────────────────┘
-```
+[Guia_Completo_Android_Detalhado.md](https://github.com/user-attachments/files/26862370/Guia_Completo_Android_Detalhado.md)
+# GUIA COMPLETO E DETALHADO DE DESENVOLVIMENTO ANDROID MODERNO
+## Kotlin, Jetpack Compose, Arquitetura, Testes e Firebase
 
 ---
 
-# SUMÁRIO
+# ÍNDICE DETALHADO
 
-1. Fundamentos do Kotlin
-2. Jetpack Compose
-3. Arquitetura
-4. Injeção de Dependência
-5. Networking
-6. Coroutines e Flow
-7. Persistência
-8. Navegação
-9. Testes
-10. Princípios de Software
-11. Projeto Completo
+1. Kotlin Fundamentos - Explicação Completa
+2. Jetpack Compose - Detalhado
+3. Arquitetura MVVM e MVI - Completo
+4. Injeção de Dependência Hilt e Koin
+5. Room Database - Completo
+6. Retrofit e Ktor - Explicação
+7. Coroutines e Flow - Detalhado
+8. Firebase - Completo
+9. Testes Unitários - Completo com Exemplos
+10. Mockito - vs MockK
+11. Espresso - Complete com Exemplos
+12. Navigation Compose - Detalhado
+13. Room - Mais Detalhes
+14. SOLID e Clean Code
+15. Projeto Completo
 
 ---
 
-# MÓDULO 1 — FUNDAMENTOS DO KOTLIN
+# CAPÍTULO 1: KOTLIN FUNDAMENTOS
 
-Kotlin é a linguagem oficial para desenvolvimento Android. Criada pela JetBrains, ela oferece uma sintaxe concisa, moderna e segura que melhora significativamente a produtividade do desenvolvedor.
+## 1.1 Por que aprender Kotlin?
 
-## 1.1 Sintaxe Básica
+Kotlin é a linguagem oficial do Android desde 2017. O Google exige Kotlin para novos projetos.
 
-Kotlin foi pensada para ser concisa e expressiva. Vamos entender os conceitos fundamentais.
+**Vantagens sobre Java:**
+- Null safety (elimina NullPointerException)
+- Sintaxe muito mais curta
+- Suporte nativo a coroutines
+- Código mais seguro
+- Menos boilerplate (código repetitivo)
 
-### Hello World em Kotlin
+**Exemplo comparativo:**
 
 ```
-fun main() {
-    println("Hello, Android!")
+// Java - muito código
+public class Usuario {
+    private String nome;
+    private int idade;
+    
+    public Usuario(String nome, int idade) {
+        this.nome = nome;
+        this.idade = idade;
+    }
+    
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+    public int getIdade() { return idade; }
+    public void setIdade(int idade) { this.idade = idade; }
+    
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "nome='" + nome + '\'' +
+                ", idade=" + idade +
+                '}';
+    }
+}
+
+// Kotlin - uma linha!
+data class Usuario(val nome: String, val idade: Int)
+
+// data class já gera:
+// - getters e setters automáticos
+// - equals() e hashCode()
+// - toString()
+// - copy()
+// - componentN()
+```
+
+## 1.2 Variáveis: val vs var - Explicação Completa
+
+Há dois tipos de variáveis em Kotlin:
+
+### val - Variável Imutável
+
+```
+val nome = "João"
+nome = "Maria"  // ERRO! Não pode atribuir novamente
+```
+
+**Quando usar:** Sempre que possível! É mais seguro e previsível.
+
+### var - Variável Mutável
+
+```
+var idade = 25
+idade = 26  // OK!
+```
+
+**Quando usar:** Apenas quando o valor precisa mudar (contador, campo de formulário, estado de UI).
+
+### Exemplo prático em app Android
+
+```
+// ❌ RUIM - usar var quando não precisa
+@Composable
+fun BotaoContador() {
+    var texto = "Clique"  // nunca muda!
+    Button(onClick = { }) {
+        Text(texto)
+    }
+}
+
+// ✅ BOM - usar val quando não precisa
+@Composable
+fun BotaoContador() {
+    val texto = "Clique"
+    Button(onClick = { }) {
+        Text(texto)
+    }
+}
+
+// ✅ CERTO - usar var quando PRECISA mudar
+@Composable
+fun CampoNome() {
+    var nome by remember { mutableStateOf("") }
+    OutlinedTextField(
+        value = nome,
+        onValueChange = { nome = it }  // precisa mudar!
+    )
 }
 ```
 
-A função `main` é o ponto de entrada de todo programa Kotlin. Em Android, usamos Activity, Application ou Compose como pontos de entrada.
+### Resumo
 
-### Variáveis declaradas com `val` e `var`
+| Tipo | Pode mudar valor | Performance | Recomendação |
+|------|----------------|-------------|--------------|
+| val | ❌ | Melhor | ✅ Padrão |
+| var | ✅ | Similar | Apenas se necessário |
 
-```
-val nome = "Android"      // Imutável (não pode ser重新atribuído)
-var idade = 10            // Mutável (pode ser alterado)
-nome = "Novo nome"       // ERRO! Não compila
-idade = 11               // OK
-```
+## 1.3 Null Safety - O Problema e a Solução
 
-**Regra de ouro**: Sempre use `val` por padrão. Só use `var` quando realmente precisar mudar o valor.
+### O problema em Java/NullPointerException
 
-### Inferência de tipos
-
-Kotlin reconhece o tipo automaticamente:
-
-```
-val texto = "Hello"       // Tipo: String
-val numero = 42          // Tipo: Int
-val decimal = 3.14       // Tipo: Double
-val ativo = true         // Tipo: Boolean
-```
-
-Ainda assim, podemos declarar o tipo explicitamente:
-
-```
-val texto: String = "Hello"
-val numero: Int = 42
-val decimal: Double = 3.14
-val ativo: Boolean = true
-```
-
-## 1.2 Tipos de Dados
-
-Kotlin possui tipos básicos semelhantes a outras linguagens.
-
-### Tipos Numéricos
-
-```
-val inteiro: Int = 100                // Inteiro de 32 bits
-val longo: Long = 1_000_000L          // Inteiro de 64 bits
-val double: Double = 3.14159          // Ponto flutuante 64 bits
-val float: Float = 3.14f              // Ponto flutuante 32 bits
-val short: Short = 10                // Inteiro de 16 bits
-val byte: Byte = 127                  // Inteiro de 8 bits
-```
-
-### Tipos de Texto
-
-```
-val textoNormal: String = "Android"
-val textoMultilinha = """
-    Este é um texto
-    de múltiplas
-    linhas
-""".trimIndent()
-```
-
-### Caracteres
-
-```
-val letra: Char = 'A'
-val emoji: Char = '\u1F600'  // 😀
-```
-
-### Booleanos
-
-```
-val VERDADEIRO = true
-val FALSO = false
-```
-
-### Arrays
-
-```
-val numeros = arrayOf(1, 2, 3, 4, 5)
-val misto = arrayOf("texto", 42, true)
-
-// Arrays tipados
-val ints: IntArray = intArrayOf(1, 2, 3)
-val strings: Array<String> = arrayOf("a", "b", "c")
-```
-
-## 1.3 Null Safety (Tratamento de Nulos)
-
-Esta é uma das features mais importantes do Kotlin — eliminar o temido NullPointerException.
-
-### O problema dos nulos
-
-Em Java, qualquer objeto pode ser nulo e isso causa crashes:
+O NullPointerException (NPE) é o erro mais comum em Java:
 
 ```
 // Java
 String texto = null;
-texto.length();  // NullPointerException! 💥
+texto.length();  // 💥 NullPointerException! App crasha!
 ```
 
-### Tipos Nullable
+Isso acontece porque qualquer objeto pode ser nulo em Java.
 
-Em Kotlin, você precisa declarar explicitamente quando algo pode ser nulo usando `?`:
+### A solução do Kotlin
+
+Kotlin resolve isso com sistema de tipos:
 
 ```
-var nome: String = "Android"     // NÃO pode ser nulo
-var nomeNulo: String? = null    // PODE ser nulo
+var texto: String = "Hello"    // NÃO pode ser nulo - compila não!
+var textoNulo: String? = null  // pode ser nulo, mas precisa tratar
 ```
 
-### Operador de chamada segura `?.`
+### Operadores de Null Safety
 
-Executa a ação apenas se o objeto não for nulo:
+#### 1. Operador ?.(chamada segura)
 
 ```
 var texto: String? = "Hello"
-println(texto?.length)  // Imprime 5
+texto?.length  // retorna 5
 
 texto = null
-println(texto?.length)  // Imprime null (não dá crash!)
+texto?.length  // retorna null (não crasha!)
 ```
 
-### Operador Elvis `?:`
-
-Fornece um valor padrão se for nulo:
+#### 2. Operador ?: (Elvis)
 
 ```
-var texto: String? = null
-println(texto?.length ?: 0)  // Imprime 0
+var nome: String? = null
+val tamanho = nome?.length ?: 0  // retorna 0 se for nulo
+
+// Equivalente em Java:
+int tamanho = nome != null ? nome.length() : 0;
 ```
 
-### Operador `!!` (Not-null assertion)
+#### 3. Operador !! (Not-null assertion)
 
-Use apenas quando TEM CERTEZA que não é nulo:
+⚠️ **PERIGOSO!** Use apenas se TEM CERTEZA que não é nulo:
 
 ```
 var texto: String = "Hello"
-println(texto!!.length)  // Imprime 5 — funciona
+texto!!.length  // 5 - OK
 
-var textoNulo: String? = null
-println(textoNulo!!.length)  // 💥 NullPointerException!
+texto = null
+texto!!.length  // 💥 NullPointerException! Crashou!
 ```
 
-**Atenção**: Evite `!!` sempre que possível!
+**Regra:** Evite `!!`. Use `?.` ou `?:`.
 
-## 1.4 Controle de Fluxo
-
-### if / else
+### Exemplo prático em app
 
 ```
-val nota = 85
-
-if (nota >= 90) {
-    println("A")
-} else if (nota >= 80) {
-    println("B")
-} else if (nota >= 70) {
-    println("C")
-} else {
-    println("Reprovado")
+// ❌ RUIM - pode crashar!
+fun mostrarNome(usuario: Usuario?) {
+    println(usuario!!.nome)  // Crash se usuario for null!
 }
 
-// Expressão if (retorna valor)
-val resultado = if (nota >= 60) "Aprovado" else "Reprovado"
-```
-
-### when (switch evoluído)
-
-O `when` substitui o switch de outras linguagens:
-
-```
-val dia = 3
-
-when (dia) {
-    1 -> println("Domingo")
-    2 -> println("Segunda")
-    3 -> println("Terça")
-    4 -> println("Quarta")
-    5 -> println("Quinta")
-    6 -> println("Sexta")
-    7 -> println("Sábado")
-    else -> println("Inválido")
+// ✅ BOM - trata null
+fun mostrarNome(usuario: Usuario?) {
+    println(usuario?.nome ?: "Usuário não encontrado")
 }
 
-// Com múltiplas condições
-val x = 5
-when (x) {
-    1, 2, 3 -> println("Primeiros números")
-    in 4..10 -> println("Entre 4 e 10")
-    else -> println("Outro")
-}
-
-// When como expressão
-val resultado = when (dia) {
-    1 -> "Domingo"
-    2 -> "Segunda"
-    else -> "Outro dia"
+// ✅ MELHOR - verificação explícita
+fun mostrarNome(usuario: Usuario?) {
+    if (usuario != null) {
+        println(usuario.nome)  // Kotlin smart cast!
+    } else {
+        println("Usuário não encontrado")
+    }
 }
 ```
 
-## 1.5 Funções
+## 1.4 Data Class - Para que serve?
 
-### Funções básicas
+Data class é uma classe especial para **armazenar dados**. Ela gera automaticamente:
+
+- `equals()` - comparar objetos
+- `hashCode()` - usar em Collections
+- `toString()` - debugar
+- `copy()` - copiar com alterações
+- `componentN()` - destructuring
+
+### Exemplo
 
 ```
-fun saudar(nome: String) {
-    println("Olá, $nome!")
+// Uma linha! Java precisaria de 50+ linhas
+data class Usuario(
+    val id: Int,
+    val nome: String,
+    val email: String,
+    val idade: Int = 0  // valor padrão
+)
+
+fun main() {
+    val u1 = Usuario(1, "João", "joao@email.com")
+    val u2 =Usuario(1, "João", "joao@email.com")
+    
+    // equals() gerado automaticamente
+    println(u1 == u2)  // true!
+    
+    // toString() gerado automaticamente
+    println(u1)
+    // Usuario(id=1, nome=João, email=joao@email.com, idade=0)
+    
+    // copy() para criar variações
+    val u3 = u1.copy(nome = "Maria")
+    // Usuario(id=1, nome=Maria, email=joao@email.com, idade=0)
+    
+    // Destructuring
+    val (id, nome, email, _) = u1
+    println(nome)  // João
+}
+```
+
+### Quando usar data class?
+
+✅ Para:
+- DTOs (Data Transfer Objects)
+- Models de API
+- Estados de tela (UI state)
+- Entidades de banco
+- Objetos de valor
+
+❌ Não usar para:
+- Classes com comportamento (use class normal)
+- Entidades de domínio com lógica
+
+### Equivalente em Java (para comparação)
+
+```
+// Kotlin: 5 linhas
+data class Usuario(val id: Int, val nome: String)
+
+// Java: 80+ linhas necessárias
+public class Usuario {
+    private final int id;
+    private final String nome;
+    
+    public Usuario(int id, String nome) {
+        this.id = id;
+        this.nome = nome;
+    }
+    
+    public int getId() { return id; }
+    public String getNome() { return nome; }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Usuario usuario = (Usuario) o;
+        return id == usuario.id && Objects.equals(nome, usuario.nome);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, nome);
+    }
+    
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                '}';
+    }
+    
+    public Usuario copy(int id, String nome) {
+        return new Usuario(id, nome);
+    }
+}
+```
+
+## 1.5 Sealed Class - Para que serve?
+
+Sealed class cria uma **hierarquia fechada** de classes. Isso é útil para:
+
+- Estados de tela
+- Resultados de operações
+- Eventos
+- navegação
+
+### Exemplo de Estado de Tela
+
+```
+// Java seria possível fazer subclasses em qualquer lugar
+// Kotlin sealed class limita a subclasses ao mesmo arquivo
+
+sealed class Resultado<out T> {
+    data class Sucesso<T>(val dados: T) : Resultado<T>()
+    data class Erro(val mensagem: String, val codigo: Int? = null) : Resultado<Nothing>()
+    object Carregando : Resultado<Nothing>()
 }
 
-fun soma(a: Int, b: Int): Int {
-    return a + b
+fun processarResultado(resultado:Resultado<String>) {
+    when (resultado) {
+        is Resultado.Sucesso -> println(resultado.dados)
+        is Resultado.Erro -> println("Erro: ${resultado.mensagem}")
+        is Resultado.Carregando -> println("Carregando...")
+        // ✅ O compilador garante quetratamos todos os casos!
+    }
 }
 ```
 
-### Funções de expressão única
+**Vantagem:** O compilador garante que você tratou todos os casos!
 
-Quando a função tem apenas uma expressão, podemos simplificar:
-
-```
-fun soma(a: Int, b: Int): Int = a + b
-
-// Com inferência de retorno
-fun dobro(a: Int) = a * 2
-```
-
-### Parâmetros com valor padrão
+### Exemplo prático em ViewModel
 
 ```
-fun saudar(nome: String, saudacao: String = "Olá") {
-    println("$saudacao, $nome!")
+sealed class EstadoTarefa {
+    object Carregando : EstadoTarefa()
+    data class Sucesso(val tarefas: List<Tarefa>) : EstadoTarefa()
+    data class Erro(val mensagem: String) : EstadoTarefa()
 }
 
-saudar("Android")           // Olá, Android!
-saudar("iOS", "Bem-vindo")  // Bem-vindo, iOS!
-```
-
-### Parâmetros nomeados
-
-```
-fun criarUsuario(
-    nome: String,
-    email: String,
-    idade: Int
-) {
-    println("$nome, $email, $idade anos")
+@Composable
+fun TelaTarefas(estado: EstadoTarefa) {
+    when (estado) {
+        is EstadoTarefa.Carregando -> CircularProgressIndicator()
+        is EstadoTarefa.Sucesso -> ListaTarefas(estado.tarefas)
+        is EstadoTarefa.Erro -> Text(estado.mensagem)
+    }
 }
-
-criarUsuario(nome = " João", idade = 25, email = "joao@email.com")
 ```
 
-### Funções de ordem superior
+## 1.6 Lambdas - Explicação Completa
 
-Funções que recebem ou retornam outras funções:
+### O que é Lambda?
 
-```
-fun operacao(a: Int, b: Int, funcao: (Int, Int) -> Int): Int {
-    return funcao(a, b)
-}
+Lambda é uma **função anônima** (sem nome). Útil para:
 
-val resultado = operacao(10, 5) { a, b -> a + b }
-```
+- Callbacks
+- Operações em listas
+- Eventos de UI
 
-## 1.6 Lambdas
-
-Lambdas são funções anônimas:
+### Sintaxe
 
 ```
-// Sintaxe básica
-val soma = { a: Int, b: Int -> a + b }
-
-// Chamando
-val resultado = soma(10, 5)  // 15
-
-// Lambda como parâmetro
-fun listaDeNumeros(lambda: (Int) -> Int) {
-    println(lambda(5))
-}
-
-listaDeNumeros { it * 2 }  // 10
+{ parametros -> corpo }
 ```
 
-### It — parâmetros implícito
-
-Quando a lambda tem apenas um parâmetro, usamos `it`:
+### Exemplo de lista
 
 ```
 val numeros = listOf(1, 2, 3, 4, 5)
 
-// Dobrar cada número
-val dobrados = numeros.map { it * 2 }  // [2, 4, 6, 8, 10]
+// map - transformar cada elemento
+val dobrados = numeros.map { it * 2 }
+// Resultado: [2, 4, 6, 8, 10]
 
-// Filtrar pares
-val pares = numeros.filter { it % 2 == 0 }  // [2, 4]
+// filter - filtrar elementos
+val pares = numeros.filter { it % 2 == 0 }
+// Resultado: [2, 4]
+
+// reduce - acumular em um valor
+val soma = numeros.reduce { acc, n -> acc + n }
+// Resultado: 15
 ```
 
-## 1.7 Programação Orientada a Objetos (POO)
+### O parâmetro "it"
 
-### Classes básicas
-
-```
-class Pessoa {
-    var nome: String = ""
-    var idade: Int = 0
-    
-    fun apresentar() {
-        println("Olá, meu nome é $nome e tenho $idade anos")
-    }
-}
-
-val joao = Pessoa()
-joao.nome = "João"
-joao.idade = 25
-joao.apresentar()
-```
-
-### Construtor primário
+Quando a lambda tem **um único parâmetro**, use `it`:
 
 ```
-class Pessoa(val nome: String, var idade: Int)
+val numeros = listOf(1, 2, 3)
 
-val joao = Pessoa("João", 25)
-println(joao.nome)  // João
+// com it
+val dobrados = numeros.map { it * 2 }
+
+// equivalente sem it
+val dobrados = numeros.map { numero -> numero * 2 }
 ```
 
-### Construtor secundário
+### Exemplo em botão
 
 ```
-class Pessoa {
-    var nome: String
-    var idade: Int
-    
-    constructor(nome: String) {
-        this.nome = nome
-        this.idade = 0
-    }
-    
-    constructor(nome: String, idade: Int) {
-        this.nome = nome
-        this.idade = idade
-    }
-}
+Button(onClick = { /* código */ }) { }
+
+// é equivalente a:
+val onClick = { /* código */ }
+Button(onClick = onClick) { }
 ```
 
-### Herança
+## 1.7 Funções de Escopo - let, apply, also, run, with
 
-```
-open class Animal(val nome: String) {
-    open fun som() {
-        println("Algum som")
-    }
-}
+Kotlin tem funções de escopo muito úteis para manipular objetos de forma concisa:
 
-class Cao(nome: String) : Animal(nome) {
-    override fun som() {
-        println("Au au!")
-    }
-}
+### let - Para que serve?
 
-val dog = Cao("Rex")
-dog.som()  // Au au!
-```
-
-### Polimorfismo
-
-```
-fun fazerSom(animal: Animal) {
-    animal.som()
-}
-
-val cao = Cao("Rex")
-val passaro = Passaro("Piu")
-
-fazerSom(cao)     // Au au!
-fazerSom(passaro) // Piu piu!
-```
-
-## 1.8 Data Class
-
-Classes especializadas para armazenar dados:
-
-```
-data class Usuario(
-    val id: Int,
-    val nome: String,
-    val email: String
-)
-
-val usuario = Usuario(1, "João", "joao@email.com")
-
-// Equals gerado automaticamente
-val usuario2 = Usuario(1, "João", "joao@email.com")
-println(usuario == usuario2)  // true
-
-// toString formatado
-println(usuario)
-// Usuario(id=1, nome=João, email=joao@email.com)
-
-// copy
-val usuarioCopy = usuario.copy(nome = "Maria")
-// Usuario(id=1, nome=Maria, email=joao@email.com)
-
-// componentN
-val (id, nome, email) = usuario
-```
-
-## 1.9 Sealed Classes
-
-Classes que limitam a hierarquia:
-
-```
-sealed class Resultado {
-    class Sucesso(val dados: String) : Resultado()
-    class Erro(val mensagem: String) : Resultado()
-    object Carregando : Resultado()
-}
-
-fun tratarResultado(resultado: Resultado) {
-    when (resultado) {
-        is Resultado.Sucesso -> println(resultado.dados)
-        is Resultado.Erro -> println(resultado.mensagem)
-        is Resultado.Carregando -> println("Carregando...")
-    }
-}
-```
-
-Excelente para tratamento de estados e erros.
-
-## 1.10 Enum Classes
-
-```
-enum class DiaSemana {
-    DOMINGO, SEGUNDA, TERÇA, QUARTA, QUINTA, SEXTA, SÁBADO
-}
-
-enum class StatusHTTP(val codigo: Int) {
-    OK(200),
-    CREATED(201),
-    BAD_REQUEST(400),
-    NOT_FOUND(404),
-    ERRO_INTERNO(500)
-}
-
-fun getDescricao(status: StatusHTTP): String {
-    return when (status) {
-        StatusHTTP.OK -> "Sucesso"
-        StatusHTTP.CREATED -> "Criado"
-        StatusHTTP.BAD_REQUEST -> "Requisição inválida"
-        StatusHTTP.NOT_FOUND -> "Não encontrado"
-        StatusHTTP.ERRO_INTERNO -> "Erro interno"
-    }
-}
-```
-
-## 1.11 Funções de Escopo
-
-Kotlin oferece funções de escopo que facilitam a manipulação de objetos:
-
-### let
-
-Executa código apenas se o objeto não for nulo:
+Executa código **apenas se o objeto não for nulo**:
 
 ```
 var texto: String? = "Hello"
@@ -531,28 +447,40 @@ texto = null
 texto?.let {
     println("Isso não será executado")
 }
-
-// ú  til para transformação
-val maiusculas = texto?.let { it.uppercase() }
 ```
 
-### apply
+**Uso prática em transformations:**
 
-Executa código no contexto do objeto e retorna o mesmo objeto:
+```
+val nome = usuario?.let { it.nome.uppercase() }
+// Se não for nulo, retorna nome em uppercase. Se nulo, retorna null.
+```
+
+### apply - Para que serve?
+
+Executa código no **mesmo objeto** e retorna o **objeto modificado**:
 
 ```
 val pessoa = Pessoa().apply {
     nome = "João"
     idade = 25
 }
-// Pessoa(nome=João, idade=25)
+// Resultado: Pessoa(nome=João, idade=25)
 ```
 
-Perfeito para configuração de objetos.
+**Uso prática para configuração:**
 
-### also
+```
+val intent = Intent().apply {
+    putExtra("id", 1)
+    putExtra("nome", "João")
+    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+}
+```
 
-Semelhante ao apply, mas refere-se ao objeto com `it`:
+### also - Para que serve?
+
+Executa código mas **retorna o objeto original** (não o modificado):
 
 ```
 val lista = mutableListOf<Int>().also {
@@ -560,159 +488,335 @@ val lista = mutableListOf<Int>().also {
     it.add(2)
     it.add(3)
 }
+// Resultado: [1, 2, 3]
 ```
 
-Útil para ações adicionales sem alterar o retorno.
+**Diferença apply vs also:**
 
-### run
+```
+// apply retorna o objeto modificado
+val p1 = Pessoa().apply { nome = "João" }  // retorna Pessoa
 
-Executa código no contexto de um objeto e retorna o resultado:
+// also retorna o objeto original (útil para encadear)
+val lista = mutableListOf<Int>()
+    .also { it.add(1) }  // retorna a lista
+    .also { it.add(2) }  // retorna a lista
+    .also { it.add(3) }  // retorna [1,2,3]
+```
+
+### run - Para que serve?
+
+Executa código e **retorna o resultado**:
 
 ```
 val resultado = objeto.run {
-    // faz algo
+    // código
     valorFinal
 }
 ```
 
-Útil para execução de blocos de código.
+**Útil para блок de código:**
 
-### with
+```
+val url = "https://api.com"
+    .run { URL(this) }
+    .run { openConnection() }
+    .run { connect() }
+```
 
-Semelhante a run, mas como função livre:
+### with - Para que serve?
+
+Semelhante a run, mas como **função livre**:
 
 ```
 val resultado = with(pessoa) {
-    nome + " tem " + idade + " anos"
+    "$nome tem $idade anos"
+}
+// Resultado: "João tem 25 anos"
+```
+
+### Resumo
+
+| Função | Retorna | Uso principal |
+|--------|--------|------------|
+| `let` | Resultado do bloco | Null check, transformações |
+| `apply` | Objeto modificado | Configuração |
+| `also` | Objeto original | Ações adicionais |
+| `run` | Resultado do bloco | Bloco de código |
+| `with` | Resultado do bloco | Com objeto como parâmetro |
+
+### Exemplo prático em app
+
+```
+// Sem função de escopo
+val intent = Intent()
+intent.putExtra("id", 1)
+intent.putExtra("nome", "João")
+intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+// Com apply - mais limpo
+val intent = Intent().apply {
+    putExtra("id", 1)
+    putExtra("nome", "João")
+    flags = Intent.FLAG_ACTIVITY_NEW_TASK
 }
 ```
 
-## 1.12 Coleções
+## 1.8 Sealed Classes - Explicação Completa
 
-### List
+Sealed class cria uma **hierarquia fechada** de classes. É usado para:
 
-```
-val lista = listOf(1, 2, 3, 4, 5)
+- Estados de tela
+- Resultados de operações
+- Eventos
+- navegación
 
-// Acessar elementos
-println(lista[0])  // 1
-println(lista.first())  // 1
-println(lista.last())  // 5
+### Por que usar?
 
-// Operações
-println(lista.map { it * 2 })  // [2, 4, 6, 8, 10]
-println(lista.filter { it > 2 })  // [3, 4, 5]
-println(lista.reduce { acc, i -> acc + i })  // 15
-
-// Mutable list
-val listaMutavel = mutableListOf(1, 2, 3)
-listaMutavel.add(4)
-```
-
-### Map (Dicionário)
+O compilador Kotlin **garante** que você tratou todos os casos!
 
 ```
-val mapa = mapOf(
-    "chave1" to "valor1",
-    "chave2" to "valor2"
+sealed class Resultado<out T> {
+    data class Sucesso<T>(val dados: T) : Resultado<T>()
+    data class Erro(val mensagem: String) : Resultado<Nothing>()
+    object Carregando : Resultado<Nothing>()
+}
+
+fun processar(resultado: Resultado<String>) {
+    when (resultado) {
+        is Resultado.Sucesso -> println(resultado.dados)
+        is Resultado.Erro -> println("Erro: ${resultado.mensagem}")
+        is Resultado.Carregando -> println("Carregando...")
+        // ✅ Compilador garante que tratamos tudo!
+    }
+}
+```
+
+### Exemplospráticos
+
+**Estado de tela:**
+```
+sealed class EstadoTarefa {
+    object Carregando : EstadoTarefa()
+    data class Sucesso(val tarefas: List<Tarefa>) : EstadoTarefa()
+    data class Erro(val mensagem: String) : EstadoTarefa()
+}
+```
+
+**Resultado de operação:**
+```
+sealed class Resultado<out T> {
+    data class Ok<T>(val value: T) : Resultado<T>()
+    data class Error(val exception: Throwable) : Resultado<Nothing>()
+}
+
+fun <T> executar(): Resultado<T> {
+    return try {
+        Resultado.Ok(valor)
+    } catch (e: Exception) {
+        Resultado.Error(e)
+    }
+}
+```
+
+**Navegação:**
+```
+sealed class Rota(val path: String) {
+    object Home : Rota("home")
+    object Detalhes : Rota("detalhes/{id}") {
+        fun criar(id: String) = "detalhes/$id"
+    }
+    object Login : Rota("login")
+}
+```
+
+## 1.9 Enum - Explicação Completa
+
+Enum é uma classe que representa um **conjunto fixo de constantes**.
+
+```
+enum class DiaSemana {
+    DOMINGO,
+    SEGUNDA,
+    TERÇA,
+    QUARTA,
+    QUINTA,
+    SEXTA,
+    SÁBADO
+}
+
+// Usar
+val hoje = DiaSemana.QUARTA
+when (hoje) {
+    DiaSemana.DOMINGO -> "Descanso"
+    DiaSemana.SÁBADO -> "Quase lá"
+    else -> "Dia útil"
+}
+```
+
+### Enum com propriedades
+
+```
+enum class StatusHTTP(val codigo: Int, val descricao: String) {
+    OK(200, "Sucesso"),
+    CREATED(201, "Criado"),
+    BAD_REQUEST(400, "Requisição inválida"),
+    NOT_FOUND(404, "Não encontrado"),
+    ERRO_INTERNO(500, "Erro interno")
+}
+
+// Usar
+fun getDescricao(status: StatusHTTP): String {
+    return when (status) {
+        StatusHTTP.OK -> "Sucesso"
+        StatusHTTP.CREATED -> "Criado"
+        StatusHTTP.BAD_REQUEST -> "Requisição inválida"
+        StatusHTTP.NOT_FOUND -> "Não encontrado"
+        StatusHTTP.ERRO_INTERNO -> "Erro interno"
+    }
+}
+```
+
+### Enum vs Sealed Class
+
+| Característica | Enum | Sealed Class |
+|---------------|------|-------------|
+| Instâncias | Fixas (enum constants) | Ilimitadas (data classes) |
+| properties | Sim | Sim |
+| Métodos | Sim | Sim |
+| Quando usar | Valores fixos | Estados/resultados complexos |
+
+Exemplo de quando usar **enum**:
+```
+enum class TipoTarefa { URGENTE, NORMAL, BAIXA }
+```
+
+Exemplo de quando usar **sealed class**:
+```
+sealed class Resultado { Ok, Error, Loading }
+```
+
+## 1.10 Coleções - Lista, Set, Map
+
+### List (lista ordenada)
+
+```
+val numeros = listOf(1, 2, 3)
+numeros[0]  // 1 - primeiro elemento
+numeros.first()  // 1
+numeros.last()  // 3
+
+// imutável - não pode adicionar
+val mutavel = mutableListOf(1, 2, 3)
+mutavel.add(4)
+```
+
+### Map (dicionário/chave-valor)
+
+```
+val usuarios = mapOf(
+    1 to "João",
+    2 to "Maria"
 )
 
-// Acessar
-println(mapa["chave1"])  // valor1
-println(mapa.getOrDefault("chave3", "padrão"))  // padrão
+usuarios[1]  // "João"
+usuarios.getOrDefault(3, "Não encontrado")  // "Não encontrado"
 
-// Iterar
-for ((chave, valor) in mapa) {
-    println("$chave -> $valor")
+for ((id, nome) in usuarios) {
+    println("$id: $nome")
 }
-
-// Mutable map
-val mapaMutavel = mutableMapOf<String, Any>()
-mapaMutavel["nome"] = "João"
 ```
 
-### Set (Conjunto único)
+### Set (conjunto único)
 
 ```
-val conjunto = setOf(1, 2, 3, 2, 1)
-// {1, 2, 3} — elementos únicos
+val numeros = setOf(1, 2, 2, 3, 3)
+// Resultado: {1, 2, 3} - elimina duplicatas
 
-println(1 in conjunto)  // true
-println(conjunto.contains(4))  // false
-```
-
-### Sequências (Lazy evaluation)
-
-```
-val resultado = lista
-    .asSequence()
-    .filter { it > 2 }
-    .map { it * 10 }
-    .first()
+1 in numeros  // true
+4 in numeros  // false
 ```
 
 ---
 
-# MÓDULO 2 — JETPACK COMPOSE
+# CAPÍTULO 2: JETPACK COMPOSE
 
-Jetpack Compose é o toolkit moderno de UI do Android. Ele simplifica e acelera o desenvolvimento de interfaces com código declarativo.
+## 2.1 O que é Compose e para que serve?
 
-## 2.1 Conceitos Básicos
+Compose é o **toolkit moderno de UI do Android**. Substitui XMLs por código Kotlin.
 
-### O que é Compose?
+**Benefícios:**
+- Menos código (até 50% menos)
+- UI declarativa (diz o que quer, não como fazer)
+- Estado reativo (UI atualiza automaticamente)
+- Preview (visualiza sem rodar app)
 
-Compose é um toolkit de UI declarativo que permite construir natvas Android com menos código.
-
-comparação:
+### Comparação
 
 ```
-// XML tradicional (OLD)
-<Button
-    android:id="@+id/btn_salvar"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="Salvar"
-    android:onClick="salvar"
-/>
+// XML ANTIGO (30+ linhas)
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    
+    <TextView
+        android:id="@+id/texto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Olá Mundo" />
+        
+    <Button
+        android:id="@+id/botao"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Clique" />
+</androidx.constraintlayout.widget.ConstraintLayout>
 
-// Compose (MODERNO)
-Button(onClick = { salvar() }) {
-    Text("Salvar")
+// COMPOSE (5 linhas)
+Column(modifier = Modifier.fillMaxSize()) {
+    Text("Olá Mundo")
+    Button(onClick = { /* ação */ }) {
+        Text("Clique")
+    }
 }
 ```
 
-### @Composable
+## 2.2 @Composable - Para que serve?
 
-Funções que descrevem a UI:
+@Composable informa ao Compose que a função **descreve UI**:
 
 ```
 @Composable
 fun Saudacao() {
-    Text("Olá, Android!")
+    Text("Olá Mundo!")
 }
 ```
 
-Toda função que cria UI deve ter a anotação `@Composable`.
+**Importante:** Apenas funções @Composable podem chamar outras funções @Composable.
 
-### Preview (Visualização)
+## 2.3 Estado e remember - Explicação
+
+### O problema
+
+Em XML, o estado era gerenciado manualmente:
 
 ```
-@Preview
-@Composable
-fun SaudacaoPreview() {
-    Saudacao()
-}
+// Java - gerenciar manualmente
+texto = findViewById(R.id.texto);
+contador = findViewById(R.id.contador);
+
+botao.setOnClickListener(new OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        valor++;
+        texto.setText("Contagem: " + valor);
+    }
+});
 ```
 
-Permite visualizar o componente no Android Studio.
+### A solução do Compose
 
-## 2.2 Estado e Recomposição
-
-### O problema do estado
-
-Em XML tradicional, o estado era gerenciado manualmente. No Compose, mudamos o estado e a UI se atualiza automaticamente.
-
-### remember e mutableStateOf
+O Compose usa **estado reativo** - mude o estado, a UI atualiza automaticamente:
 
 ```
 @Composable
@@ -728,65 +832,61 @@ fun Contador() {
 }
 ```
 
-Entendendo:
-- `mutableStateOf(0)` cria um estado observable
-- `remember` mantém o estado durante recomposições
-- `by` permite usar sem `.value`
+**O que acontece:**
+1. Usuário clica no botão
+2. `contador++` muda o estado
+3. Compose detecta mudança
+4. UI recompõe automaticamente com novo valor
 
-### Estado com classe
+### remember - Para que serve?
+
+`remember` **salva o estado entre recomposições**:
 
 ```
-data class EstadoTela(
-    val nome: String = "",
-    val email: String = "",
-    val isLoading: Boolean = false,
-    val erro: String? = null
-)
-
 @Composable
-fun Formulario() {
-    var estado by remember { mutableStateOf(EstadoTela()) }
-    
-    Column {
-        if (estado.isLoading) {
-            CircularProgressIndicator()
-        } else {
-            TextField(
-                value = estado.nome,
-                onValueChange = { estado = estado.copy(nome = it) },
-                label = { Text("Nome") }
-            )
-        }
-    }
+fun MinhaTela() {
+    var nome by remember { mutableStateOf("") }
+    OutlinedTextField(value = nome, onValueChange = { nome = it })
 }
 ```
 
-## 2.3 Layouts
+Sem `remember`, o estado seria **resetado** a cada recomposição!
 
-### Column (Layout vertical)
+### mutableStateOf - Para que serve?
+
+Cria um estado **reativo**. Quando mudado, Compose recompõe a UI:
+
+```
+val estado by lazy { mutableStateOf(0) }
+// Quando `estado.value` muda,
+// todas as linhas que usam `estado` são reexecutadas
+```
+
+## 2.4 Layouts - Explicação Completa
+
+### Column (vertical)
 
 ```
 @Composable
-fun MeuLayout() {
+fun LayoutVertical() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Text("Item 1")
-        Text("Item 2")
-        Text("Item 3")
+        Text("Linha 1")
+        Text("Linha 2")
+        Text("Linha 3")
     }
 }
 ```
 
-### Row (Layout horizontal)
+### Row (horizontal)
 
 ```
 @Composable
-fun Linha() {
+fun LayoutHorizontal() {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -798,458 +898,235 @@ fun Linha() {
 }
 ```
 
-### Box (Layout livre)
+### Box (livre/sobreposto)
 
 ```
 @Composable
-fun Caixa() {
+fun LayoutBox() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("Centralizado")
+        Text("Centralizado!")
     }
 }
 ```
 
-### LazyColumn (Lista virtualizada)
+### LazyColumn (lista virtualizada)
 
 ```
 @Composable
-fun ListaNumeros() {
+fun Lista() {
     val itens = (1..100).toList()
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(16.dp)
     ) {
         items(itens) { numero ->
-            Text(
-                text = "Item $numero",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
+            Text("Item $numero")
         }
     }
 }
 ```
 
-### LazyGrid (Grid virtualizado)
+**Por que LazyColumn?** Renderiza apenas itens visíveis na tela. Com 10.000 itens, ListView normal pode lento. LazyColumn é rápido!
 
-```
-@Composable
-fun Grade Numeros() {
-    val itens = (1..20).toList()
-    
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(itens) { numero ->
-            Text(
-                text = "$numero",
-                modifier = Modifier
-                    .size(100.dp)
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
-            )
-        }
-    }
-}
-```
+## 2.5 Modifier - Para que serve?
 
-## 2.4 Modifier (Modificadores)
-
-O Modifier é клюve para customizar elementos:
-
-### Padding e Margin
+Modifier **personaliza** elementos:
 
 ```
 Text(
-    text = "texto",
+    text = "Olá",
     modifier = Modifier
-        .padding(16.dp)           // externo
-        .padding(start = 8.dp)   // específico
+        .padding(16.dp)           // espaço externo
+        .background(Color.Blue) // cor de fundo
+        .clickable { /* ação */ }  // clicável
+        .size(100.dp)            // tamanho
 )
 ```
 
-### Background
-
-```
-Box(
-    modifier = Modifier
-        .background(Color.Blue)
-        .size(100.dp)
-)
-```
-
-### Tamanho
-
-```
-Box(
-    modifier = Modifier
-        .width(100.dp)
-        .height(50.dp)
-        .size(width = 100.dp, height = 50.dp)  // combinação
-        .fillMaxSize()                       // ocupa todo o espaço
-)
-```
-
-### Clickable
-
-```
-Text(
-    text = "Clique aqui",
-    modifier = Modifier.clickable { 
-        // ação
-    }
-)
-```
-
-### Border
-
-```
-Card(
-    modifier = Modifier.border(
-        width = 2.dp,
-        color = Color.Black,
-        shape = RoundedCornerShape(8.dp)
-    )
-)
-```
-
-### Combinação de modifiers
+### Modifiers mais comuns
 
 ```
 Modifier
-    .fillMaxWidth()
-    .padding(16.dp)
-    .background(Color.White)
-    .border(1.dp, Color.Gray)
-    .clickable { ... }
-    .padding(16.dp)
+    .fillMaxSize()           // ocupa todo o espaço
+    .fillMaxWidth()         // ocupa largura total
+    .fillMaxHeight()         // ocupa altura total
+    .size(largura, altura)  // tamanho específico
+    .padding(valor)         // margem externa
+    .padding(horizontal, vertical)
+    .background(cor)        // cor de fundo
+    .border(largura, cor)    // borda
+    .clickable { }         // torna clicável
+    .testTag("tag")         // tag para teste
 ```
 
-## 2.5 Material 3
+## 2.6 Material 3 - Sistema de Design
 
-Material Design 3 é o sistema de design moderno do Google:
+Material 3 é o sistema de design do Google:
 
-### Cores (Color Scheme)
-
-```
-val colorScheme = ColorScheme(
-    primary = Color(0xFF6750A4),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFEADDFF),
-    onPrimaryContainer = Color(0xFF21005D),
-    secondary = Color(0xFF625B71),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE8DEF8),
-    onSecondaryContainer = Color(0xFF1D192B)
-)
-```
-
-### Tipografia
+### Cores
 
 ```
-Typography(
-    displayLarge = TextStyle(
-        fontSize = 57.sp,
-        fontWeight = FontWeight.Normal
-    ),
-    headlineMedium = TextStyle(
-        fontSize = 28.sp,
-        fontWeight = FontWeight.Normal
-    ),
-    bodyLarge = TextStyle(
-        fontSize = 16.sp,
-        fontWeight = FontWeight.Normal
-    ),
-    labelSmall = TextStyle(
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium
-    )
-)
+MaterialTheme.colorScheme.primary        // cor principal
+MaterialTheme.colorScheme.onPrimary   // texto em primary
+MaterialTheme.colorScheme.secondary   // cor secundária
+MaterialTheme.colorScheme.surface       // cor de superfície
+MaterialTheme.colorScheme.background // cor de fundo
+MaterialTheme.colorScheme.error       // cor de erro
 ```
 
-### Componentes Material 3
-
-#### Button
+### Componentes
 
 ```
-Button(
-    onClick = { /* ação */ },
-    enabled = true
-) {
-    Text("Botão primário")
-}
-```
+Button(onClick = { }) { Text("Primário") }
 
-#### OutlinedButton
+OutlinedButton(onClick = { }) { Text("Outline") }
 
-```
-OutlinedButton(onClick = { /* ação */ }) {
-    Text("Botão outline")
-}
-```
+TextButton(onClick = { }) { Text("Texto") }
 
-#### TextButton
-
-```
-TextButton(onClick = { /* ação */ }) {
-    Text("Botão de texto")
-}
-```
-
-#### FloatingActionButton
-
-```
-FloatingActionButton(
-    onClick = { /* ação */ },
-    containerColor = MaterialTheme.colorScheme.primaryContainer
-) {
+FloatingActionButton(onClick = { }) {
     Icon(Icons.Default.Add, contentDescription = "Adicionar")
 }
-```
 
-#### Card
-
-```
-Card(
-    modifier = Modifier.fillMaxWidth(),
-    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-) {
+Card(modifier = Modifier.fillMaxWidth()) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Título")
-        Text("Conteúdo")
     }
 }
-```
-
-#### TextField
-
-```
-var texto by remember { mutableStateOf("") }
 
 OutlinedTextField(
     value = texto,
     onValueChange = { texto = it },
     label = { Text("Nome") },
     placeholder = { Text("Digite seu nome") },
-    leadingIcon = { Icon(Icons.Default.Person, null) },
-    trailingIcon = { Icon(Icons.Default.Close, null) },
     isError = false,
     singleLine = true
 )
 ```
 
-#### Snackbar
-
-```
-val snackbarHostState = remember { SnackbarHostState() }
-
-Scaffold(
-    snackbarHost = { SnackbarHost(snackbarHostState) }
-) { padding ->
-    LaunchedEffect(Unit) {
-        snackbarHostState.showSnackbar("Mensagem")
-    }
-}
-```
-
-#### BottomNavigation
-
-```
-val navController = rememberNavController()
-
-Scaffold(
-    bottomBar = {
-        NavigationBar {
-            NavigationBarItem(
-                icon = { Icon(Icons.Default.Home, null) },
-                label = { Text("Início") },
-                selected = true,
-                onClick = { }
-            )
-            NavigationBarItem(
-                icon = { Icon(Icons.Default.Search, null) },
-                label = { Text("Buscar") },
-                selected = false,
-                onClick = { }
-            )
-        }
-    }
-) { }
-```
-
-## 2.6 Temas e Cores
-
-### Criando um tema
-
-```
-@Composable
-fun MeusTema(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-    
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
-}
-```
-
-### Usando cores do tema
-
-```
-@Composable
-fun Componente() {
-    Text(
-        text = "Texto",
-        color = MaterialTheme.colorScheme.primary
-    )
-}
-```
-
-### Suporte a Dark Mode
-
-```
-@Composable
-fun TemaEscuro() {
-    val darkTheme = isSystemInDarkTheme()
-    val surfaceColor by animateColorAsState(
-        targetValue = if (darkTheme) Color.Black else Color.White,
-        label = "surface"
-    )
-}
-```
-
-## 2.7 Performance e Recomposição
-
-### O que é recomposição?
-
-Recomposição é quando o Compose re-executa a função @Composable para atualizar a UI quando o estado muda.
-
-### Melhores práticas
-
-#### Use remember para estados que não mudam frequentemente
-
-```
-@Composable
-fun Tela() {
-    var estado by remember { mutableStateOf(initial)
-    // ✅ Bom: estado não Recria a cada render
-}
-```
-
-#### Evite recomposições desnecessárias
-
-```
-@Composable
-fun TelaIneficiente() {
-    val lista = listOf(1, 2, 3)
-    
-    LazyColumn {
-        items(lista) { item ->
-            // Problema: nova lista a cada recomposição
-        }
-    }
-}
-
-// Solução: remember
-@Composable
-fun TelaEficiente() {
-    val lista = remember { listOf(1, 2, 3) }
-    // ✅ Melhor: mesma lista entre recomposições
-}
-```
-
-#### Use key para listas
-
-```
-LazyColumn {
-    items(
-        items = lista,
-        key = { it.id }  // ✅ Melhora performance
-    ) { item ->
-        // conteúdo
-    }
-}
-```
-
-#### Evite lambdas no Modifier
-
-```
-@Composable
-fun Evitar() {
-    // ❌ Problema: nova lambda a cada recomposição
-    Button(onClick = { executar() }) {
-        Text("Clique")
-    }
-}
-
-// Solução
-@Composable
-fun Solucao() {
-    val onClick = remember { { executar() } }
-    // ✅ Lambda estável
-    Button(onClick = onClick) {
-        Text("Clique")
-    }
-}
-```
-
-### Diagnostics no Android Studio
-
-Use "Recomposition counter" no Android Studio para identificar recomposições frequentes.
-
 ---
 
-# MÓDULO 3 — ARQUITETURA
+# CAPÍTULO 3: ARQUITETURA
 
-Arquitetura é a organização do código. Uma boa arquitetura facilita manutenção, testes e evolu ção do app.
+## 3.1 Por que usar arquitetura?
 
-## 3.1 MVVM (Model-View-ViewModel)
+Sem arquitetura:
 
-MVVM é o padrão mais usado em Android:
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│          CODE SPAGHETTI                  │
+├─────────────────────────────────────────┤
+│                                          │
+│  MainActivity.kt                        │
+│  - 2000 linhas                         │
+│  - UI + lógica + banco + API           │
+│  - Impossível de testar                │
+│  - Impossível de manter                │
+│  - Bugs层出不穷                         │
+│                                          │
+│  Problemas:                            │
+│  ❌ Difícil testar                     │
+│  ❌ Difícil manter                     │
+│  ❌ Trabalho em equipe impossível      │
+│  ❌ Bugs frequentes                    │
+│  ❌ Refatoração arriscada              │
+└─────────────────────────────────────────┘
+```
 
-[DIAGRAMA: seta do View para ViewModel (ação do usuário), seta do ViewModel para View (estado atualizado), seta do ViewModel para Model (dados)]
+Com arquitetura:
 
-### View
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│        ARQUITETURA ORGANIZADA            │
+├─────────────────────────────────────────┤
+│  UI Layer      → Telas, ViewModels      │
+│  Domain Layer → Regras de negócio      │
+│  Data Layer   → API, Banco, Repos    │
+│                                          │
+│  Benefícios:                           │
+│  ✅ Fácil de testar                   │
+│  ✅ Fácil de manter                   │
+│  ✅ Trabalho em equipe                │
+│  ✅ Bugs menos frequentes             │
+│  ✅ Refatoração segura               │
+└─────────────────────────────────────────┘
+```
 
-Responsável apenas pela apresentação:
+## 3.2 MVVM - Explicação Detalhada
+
+### O que é MVVM?
+
+MVVM (Model-View-ViewModel) separa UI da lógica:
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│              MVVM                       │
+├─────────────────────────────────────────┤
+│                                          │
+│   ┌──────────┐                          │
+│   │   UI    │ ← Composables (@Composable)│
+│   │  View   │                          │
+│   └────┬───┘                          │
+│        │ usa                           │
+│        ↓                               │
+│   ┌──────────┐   ViewModel        │
+│   │         │ ← Mantém estado      │
+│   │         │ ← processa ações     │
+│   │         │ ← chama Use Cases  │
+│   └────┬───┘                          │
+│        │                               │
+│        ↓                               │
+│   ┌──────────┐   dados         │
+│   │   API    │ ← busca/salva     │
+│   │ Repository                         │
+│   └──────────┘                        │
+└─────────────────────────────────────────┘
+```
+
+### Por que usar MVVM?
+
+1. **Separation of Concerns** - UI separada da lógica
+2. **Testabilidade** - ViewModel pode ser testado sem UI
+3. **Manutenibilidade** - código organizado
+4. **State Management** - estado centralizado
+
+### Exemplo completo
+
+**1. Model (dados)**
 
 ```
-@Composable
-fun TelaUsuario(
-    viewModel: UsuarioViewModel = viewModel()
-) {
-    val estado by viewModel.estado.collectAsState()
+data class Usuario(
+    val id: String,
+    val nome: String,
+    val email: String,
+    val avatarUrl: String?
+)
+```
+
+**2. Repository (acesso a dados)**
+
+```
+class UsuarioRepository {
+    private val api = RetrofitClient.api
     
-    Column {
-        when {
-            estado.isLoading -> CircularProgressIndicator()
-            estado.erro != null -> Text(estado.erro!!)
-            else -> {
-                Text(estado.usuario?.nome ?: "")
-                Text(estado.usuario?.email ?: "")
-            }
-        }
+    suspend fun buscarUsuario(id: String): Usuario {
+        return api.buscarUsuario(id).toDomain()
+    }
+    
+    suspend fun salvarUsuario(usuario: Usuario) {
+        api.criarUsuario(usuario.toDto())
     }
 }
 ```
 
-### ViewModel
-
-Gerencia o estado e lógica de negócio:
+**3. ViewModel (lógica)**
 
 ```
 @HiltViewModel
@@ -1261,47 +1138,28 @@ class UsuarioViewModel @Inject constructor(
     val estado: StateFlow<EstadoUsuario> = _estado
     
     init {
-        carregarUsuario()
+        carregarUsuario("1")
     }
     
-    private fun carregarUsuario() {
-        _estado.value = _estado.value.copy(isLoading = true)
-        
+    fun carregarUsuario(id: String) {
         viewModelScope.launch {
+            _estado.value = _estado.value.copy(isLoading = true, erro = null)
             try {
-                val usuario = repository.buscarUsuario()
+                val usuario = repository.buscarUsuario(id)
                 _estado.value = _estado.value.copy(
                     usuario = usuario,
                     isLoading = false
                 )
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
-                    erro = e.message,
-                    isLoading = false
+                    isLoading = false,
+                    erro = e.message ?: "Erro ao carregar"
                 )
             }
         }
     }
 }
-```
 
-### Model/Repository
-
-acessa dados (API, banco, etc):
-
-```
-class UsuarioRepository @Inject constructor(
-    private val api: UsuarioApi
-) {
-    suspend fun buscarUsuario(): Usuario {
-        return api.buscarUsuario()
-    }
-}
-```
-
-### Estado
-
-```
 data class EstadoUsuario(
     val usuario: Usuario? = null,
     val isLoading: Boolean = false,
@@ -1309,88 +1167,162 @@ data class EstadoUsuario(
 )
 ```
 
-## 3.2 MVI (Model-View-Intent)
-
-MVI é um padrão mais robusto que oferece previsibilidade completa do fluxo de dados.
-
-[DIAGRAMA: UI → Intent/Actions → Reducer → Estado → UI (ciclo completo)]
-
-### Conceitos fundamentais
-
-#### State (Estado)
-
-Estado único e imutável da UI:
+**4. Screen (UI)**
 
 ```
-data class EstadoTela(
-    val isLoading: Boolean = false,
-    val listaItens: List<Item> = emptyList(),
-    val itemSelecionado: Item? = null,
-    val erro: String? = null,
-    val filtro: TipoFiltro = TipoFiltro.TODOS
-)
-```
-
-#### Intent/Action (Intenção/Ação)
-
-Ações que o usuário realiza:
-
-```
-sealed class Intencao {
-    object CarregarLista : Intencao()
-    data class SelecionarItem(val item: Item) : Intencao()
-    data class Filtrar(val tipo: TipoFiltro) : Intencao()
-    object LimparErro : Intencao()
-    object AtualizarDados : Intencao()
+@Composable
+fun TelaUsuario(
+    viewModel: UsuarioViewModel = hiltViewModel()
+) {
+    val estado by viewModel.estado.collectAsState()
+    
+    when {
+        estado.isLoading -> CircularProgressIndicator()
+        estado.erro != null -> Column {
+            Text(estado.erro!!, color = Color.Red)
+            Button(onClick = { viewModel.carregarUsuario("1") }) {
+                Text("Tentar novamente")
+            }
+        }
+        else -> Column {
+            Text(estado.usuario?.nome ?: "")
+            Text(estado.usuario?.email ?: "")
+        }
+    }
 }
 ```
 
-#### Reducer (Transformador)
+## 3.3 MVI - Explicação Completa
 
-Função pura que transforma o estado baseado na ação:
+### O que é MVI?
+
+MVI (Model-View-Intent) é uma versão mais robusta do MVVM:
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│              MVI                       │
+├─────────────────────────────────────────┤
+│                                          │
+│  ┌─────────┐   Estado (single source)      │
+│  │ STATE  │ ← ÚNICO estado da tela     │
+│  └────┬────┘                          │
+│       │ observe                       │
+│       ↓ renderiza                       │
+│  ┌─────────┐                          │
+│  │   UI    │ ← Composables          │
+│  │        │                          │
+│  │        │                          │
+│  └────┬────┘                          │
+│       │ action                         │
+│       ↓                                │
+│  ┌─────────┐   Intent (ação do usuário)│
+│  │ INTENT │                          │
+│  └────┬────┘                          │
+│       │ processa                       │
+│       ↓                                │
+│  ┌─────────┐   Reducer                 │
+│  │REDUCER │ ← Transforma estado        │
+│  └────┬────┘                          │
+│       │ new state                     │
+│       ↓                                │
+│  ┌─────────┐   Effects                  │
+│  │EFFECTS │ ← Navegação, snackbar    │
+│  └─────────┘                          │
+└─────────────────────────────────────────┘
+```
+
+### Por que MVI é melhor que MVVM?
+
+| Aspecto | MVVM | MVI |
+|--------|------|-----|
+| Estado | Múltiplos LiveData | Estado único |
+| Previsibilidade | Média | Alta (fluxo único) |
+| Bugs de race condition | Mais provável | Menos provável |
+| Testabilidade | Boa | Excelente |
+| Complexidade | Menor | Maior |
+
+### Implementação detalhada
+
+**1. Estado (State)**
 
 ```
-fun reducer(estado: EstadoTela, acao: Acao): EstadoTela {
+data class EstadoTarefa(
+    val isLoading: Boolean = false,
+    val tarefas: List<Tarefa> = emptyList(),
+    val tarefaSelecionada: Tarefa? = null,
+    val erro: String? = null,
+    val filtro: TipoFiltro = TipoFiltro.TODOS
+)
+
+enum class TipoFiltro {
+    TODOS,
+    PENDENTES,
+    CONCLUIDAS
+}
+```
+
+**2. Ações (Intent)**
+
+```
+sealed class Acao {
+    object CarregarTarefas : Acao()
+    data class SelecionarTarefa(val tarefa: Tarefa) : Acao()
+    data class ConcluirTarefa(val id: String) : Acao()
+    data class ExcluirTarefa(val id: String) : Acao()
+    data class Filtrar(val tipo: TipoFiltro) : Acao()
+    object LimparErro : Acao()
+}
+```
+
+**3. Efeitos (Effects)**
+
+```
+sealed class Efeito {
+    data class MostrarSnackbar(val mensagem: String) : Efeito()
+    data class NavegarPara(val tela: String) : Efeito()
+    objectMostrarDialogConfirmacao : Efeito()
+}
+```
+
+**4. Reducer**
+
+```
+fun reducer(estado:EstadoTarefa, acao:Acao):EstadoTarefa {
     return when (acao) {
-        is Acao.Carregando -> estado.copy(
+        is Acao.CarregarTarefas -> estado.copy(
             isLoading = true,
             erro = null
         )
         is Acao.Sucesso -> estado.copy(
             isLoading = false,
-            listaItens = acao.itens
+            tarefas = acao.tarefas
         )
         is Acao.Erro -> estado.copy(
             isLoading = false,
             erro = acao.mensagem
         )
-        is Acao.SelecionarItem -> estado.copy(
-            itemSelecionado = acao.item
+        is Acao.SelecionarTarefa -> estado.copy(
+            tarefaSelecionada = acao.tarefa
         )
         is Acao.Filtrar -> estado.copy(
             filtro = acao.tipo,
-            listaItens = filtrarLista(estado.listaItens, acao.tipo)
+            tarefas = filtrarTarefas(estado.tarefas, acao.tipo)
         )
+        is Acao.LimparErro -> estado.copy(erro = null)
+    }
+}
+
+private fun filtrarTarefas(tarefas: List<Tarefa>, filtro: TipoFiltro): List<Tarefa> {
+    return when (filtro) {
+        TipoFiltro.TODOS -> tarefas
+        TipoFiltro.PENDENTES -> tarefas.filter { !it.concluida }
+        TipoFiltro.CONCLUIDAS -> tarefas.filter { it.concluida }
     }
 }
 ```
 
-#### Effects/Side Effects (Efeitos)
-
-Eventos únicos que não fazem parte do estado (navegação, toasts, etc):
-
-```
-sealed class Efeito {
-    data class NavegarPara(val tela: Tela) : Efeito()
-    data class MostrarSnackbar(val mensagem: String) : Efeito()
-    object MostrarDialogSair : Efeito()
-    data class CopiarTexto(val texto: String) : Efeito()
-}
-```
-
-### Implementação completa MVI
-
-#### ViewModel MVI
+**5. ViewModel**
 
 ```
 @HiltViewModel
@@ -1398,46 +1330,36 @@ class TarefaViewModel @Inject constructor(
     private val repository: TarefaRepository
 ) : ViewModel() {
     
-    private val _estado = MutableStateFlow(EstadoTela())
-    val estado: StateFlow<EstadoTela> = _estado
+    private val _estado = MutableStateFlow(EstadoTarefa())
+    val estado: StateFlow<EstadoTarefa> = _estado
     
     private val _efeitos = MutableSharedFlow<Efeito>()
     val efeitos: SharedFlow<Efeito> = _efeitos
     
-    fun processarIntencao(intencao: Intencao) {
-        when (intencao) {
-            is Intencao.CarregarTarefas -> carregarTarefas()
-            is Intencao.AdicionarTarefa -> adicionarTarefa(intencao.descricao)
-            is Intencao.ConcluirTarefa -> concluirTarefa(intencao.id)
-            is Intencao.ExcluirTarefa -> excluirTarefa(intencao.id)
-            is Intencao.SelecionarTarefa -> selecionarTarefa(intencao.tarefa)
-            is Intencao.NavegarParaDetalhe -> navegarParaDetalhe(intencao.tarefa)
-            is Intencao.LimparErro -> reduzir(Acao.LimparErro)
+    init {
+        processarAcao(Acao.CarregarTarefas)
+    }
+    
+    fun processarAcao(acao: Acao) {
+        when (acao) {
+            is Acao.CarregarTarefas -> carregarTarefas()
+            is Acao.SelecionarTarefa -> selecionarTarefa(acao.tarefa)
+            is Acao.ConcluirTarefa -> concluirTarefa(acao.id)
+            is Acao.ExcluirTarefa -> excluirTarefa(acao.id)
+            is Acao.Filtrar -> filtrar(acao.tipo)
+            is Acao.LimparErro -> reduzir(Acao.LimparErro)
         }
     }
     
     private fun carregarTarefas() {
         viewModelScope.launch {
-            reduzir(Acao.Carregando)
+            reduciendo(Acao.CarregarTarefas)
             try {
-                val tarefas = repository.buscarTarefas()
-                reduzindo(Acao.Sucesso(tarefas))
+                repository.buscarTarefas().collect { tarefas ->
+                    reduzindo(Acao.Sucesso(tarefas))
+                }
             } catch (e: Exception) {
-                reduzir(Acao.Erro(e.message ?: "Erro desconhecido"))
-            }
-        }
-    }
-    
-    private fun adicionarTarefa(descricao: String) {
-        viewModelScope.launch {
-            reduzir(Acao.Carregando)
-            try {
-                val novaTarefa = Tarefa(id = UUID.randomUUID(), descricao = descricao)
-                repository.salvarTarefa(naTaTarefa)
-                _efeitos.emit(Efeito.MostrarSnackbar("Tarefa adicionada!"))
-                carregarTarefas()
-            } catch (e: Exception) {
-                reduzir(Acao.Erro(e.message ?: "Erro ao adicionar"))
+                reduzindo(Acao.Erro(e.message ?: "Erro"))
             }
         }
     }
@@ -1447,9 +1369,8 @@ class TarefaViewModel @Inject constructor(
             try {
                 repository.concluirTarefa(id)
                 _efeitos.emit(Efeito.MostrarSnackbar("Tarefa concluída!"))
-                carregarTarefas()
             } catch (e: Exception) {
-                reduzir(Acao.Erro(e.message ?: "Erro ao concluir"))
+                reduciendo(Acao.Erro(e.message ?: "Erro"))
             }
         }
     }
@@ -1459,320 +1380,242 @@ class TarefaViewModel @Inject constructor(
             try {
                 repository.excluirTarefa(id)
                 _efeitos.emit(Efeito.MostrarSnackbar("Tarefa excluída"))
-                carregarTarefas()
             } catch (e: Exception) {
-                reduzir(Acao.Erro(e.message ?: "Erro ao excluir"))
+                reduciendo(Acao.Erro(e.message ?: "Erro"))
             }
         }
     }
     
+    private fun filtrar(tipo: TipoFiltro) {
+        reduciendo(Acao.Filtrar(tipo))
+    }
+    
     private fun selecionarTarefa(tarefa: Tarefa) {
-        viewModelScope.launch {
-            reduzir(Acao.SelecionarTarefa(tarefa))
-        }
+        reduciendo(Acao.SelecionarTarefa(tarefa))
     }
     
-    private fun navegarParaDetalhe(tarefa: Tarefa) {
-        viewModelScope.launch {
-            _efeitos.emit(Efeito.NavegarPara(TelaDetalhe(tarefa.id)))
-        }
-    }
-    
-    private fun reduzir(acao: Acao) {
-        val novoEstado = reducer(_estado.value, acao)
-        _estado.value = novoEstado
+    private fun reduciendo(acao: Acao) {
+        _estado.value = reducer(_estado.value, acao)
     }
 }
 ```
 
-#### Tela MVI
+**6. Screen**
 
 ```
 @Composable
 fun TelaTarefas(
-    viewModel: TarefaViewModel = viewModel()
+    viewModel: TarefaViewModel = hiltViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     
     LaunchedEffect(Unit) {
         viewModel.efeitos.collect { efeito ->
             when (efeito) {
-                is Efeito.MostrarSnackbar -> {
-                    snackbarHostState.showSnackbar(efeito.mensagem)
-                }
-                is Efeito.NavegarPara -> {
-                    navController.navigate(efeito.tela.rota)
-                }
+                is Efeito.MostrarSnackbar -> snackbarHostState.showSnackbar(efeito.mensagem)
+                is Efeito.NavegarPara -> navController.navigate(efeito.tela)
             }
         }
     }
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Minhas Tarefas") }
-            )
-        },
+        topBar = { TopAppBar(title = { Text("Tarefas") }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* mostrar dialog */ }) {
+            FloatingActionButton(onClick = { /* navegar para adicionar */ }) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar")
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         when {
-            estado.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+            estado.isLoading -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            estado.erro != null -> Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                Text(estado.erro!!, color = Color.Red)
+                Button(onClick = { viewModel.processarAcao(Acao.CarregarTarefas) }) {
+                    Text("Tentar novamente")
                 }
             }
-            estado.erro != null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = estado.erro!!,
-                        color = MaterialTheme.colorScheme.error
+            else -> LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                items(estado.tarefas) { tarefa ->
+                    TarefaItem(
+                        tarefa = tarefa,
+                        onConcluir = { viewModel.processarAcao(Acao.ConcluirTarefa(tarefa.id)) },
+                        onExcluir = { viewModel.processarAcao(Acao.ExcluirTarefa(tarefa.id)) }
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { 
-                        viewModel.processarIntencao(Intencao.CarregarTarefas)
-                    }) {
-                        Text("Tentar novamente")
-                    }
-                }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(estado.listaTarefas) { tarefa ->
-                        TarefaItem(
-                            tarefa = tarefa,
-                            onConcluir = { 
-                                viewModel.processarIntencao(
-                                    Intencao.ConcluirTarefa(tarefa.id)
-                                )
-                            },
-                            onExcluir = {
-                                viewModel.processarIntencao(
-                                    Intencao.ExcluirTarefa(tarefa.id)
-                                )
-                            },
-                            onClick = {
-                                viewModel.processarIntencao(
-                                    Intencao.NavegarParaDetalhe(tarefa)
-                                )
-                            }
-                        )
-                    }
                 }
             }
         }
     }
 }
 ```
-
-### Fluxo de dados unidirecional (UDF)
-
-[DIAGRAMA detalhado:
-
-1. Usuário interage com UI
-2. UI dispara Intent para ViewModel
-3. ViewModel processa Intent
-4. Reducer transforma Estado
-5. Estado atualizado
-6. UI observa Estado (via collectAsState)
-7. UI recompõe com novos dados
-8. Se necessário, Effects são emitidos para ações únicas (navegação, snackbar)
-]
-
-Princípios UDF:
-
-- Estado é único e imutável
-- Dados fluem em uma direção
-- UI reage a mudanças de estado
-- Ações disparam mudanças, não atualizam UI diretamente
-
-## 3.3 Diferenças entre MVVM e MVI
-
-| Aspecto | MVVM | MVI |
-|--------|-----|-----|
-| Estado | Múltiplos LiveData/StateFlow | Estado único e imutável |
-| Ação do usuário | Direct binding | Intenções explícitas |
-| Previsibilidade | Média | Alta |
-| Complexidade | Menor | Maior |
-| Testabilidade | Boa | Excelente |
-| Bugs de race condition | Mais provável | Menos provável |
-
-## 3.4 State Hoisting
-
-Mover o estado para cima na árvore de composables:
-
-```
-@Composable
-fun BotaoContador(
-    initialCount: Int = 0,
-    onCountChanged: (Int) -> Unit = {}
-) {
-    var count by remember { mutableStateOf(initialCount) }
-    
-    Button(onClick = { 
-        count++
-        onCountChanged(count)
-    }) {
-        Text("Clicks: $count")
-    }
-}
-```
-
-## 3.5 Single Source of Truth
-
-Uma única fonte para o estado:
-
-```
-// ✅ Bom: ViewModel é a única fonte
-class TelaViewModel : ViewModel() {
-    val estado: StateFlow<Estado> = _estado.asStateFlow()
-}
-
-// ❌ Ruim: múltiplas fontes
-@Composable
-fun TelaRuim() {
-    var estado by remember { mutableStateOf(Estado()) }
-    var lista by remember { mutableStateOf<List>(emptyList()) }
-    // Problema: difícil rastrear mudanças
-}
-```
-
-## 3.6 Clean Architecture
-
-Arquitetura em camadas separadas:
-
-[DIAGRAMA: Presentation (UI + ViewModel) → Domain (Use Cases + Entities) → Data (Repositories + Data Sources)]
-
-### Estrutura de pastas
-
-```
-app/
-├── src/main/java/com/projeto/
-│   ├── data/
-│   │   ├── remote/
-│   │   │   ├── api/
-│   │   │   └── dto/
-│   │   ├── repository/
-│   │   └── local/
-│   ├── domain/
-│   │   ├── model/
-│   │   ├── repository/
-│   │   └── usecase/
-│   ├── presentation/
-│   │   ├── ui/
-│   │   │   ├── components/
-│   │   │   ├── screens/
-│   │   │   └── theme/
-│   │   ├── viewmodel/
-│   │   └── navigation/
-│   └── di/
-└── build.gradle
-```
-
-### Camadas
-
-#### Domain ( núcleo )
-
-Contém regras de negócio:
-
-```
-// Entity
-data class Usuario(
-    val id: String,
-    val nome: String,
-    val email: String
-)
-
-// Repository interface
-interface UsuarioRepository {
-    suspend fun buscarUsuario(id: String): Usuario
-    suspend fun salvarUsuario(usuario: Usuario)
-    suspend fun excluirUsuario(id: String)
-}
-
-// Use Case
-class BuscarUsuarioUseCase(
-    private val repository: UsuarioRepository
-) {
-    suspend operator fun invoke(id: String): Usuario {
-        return repository.buscarUsuario(id)
-    }
-}
-```
-
-#### Data (Implementação)
-
-Implementa as interfaces do domínio:
-
-```
-class UsuarioRepositoryImpl(
-    private val api: UsuarioApi,
-    private val dao: UsuarioDao
-) : UsuarioRepository {
-    
-    override suspend fun buscarUsuario(id: String): Usuario {
-        return try {
-            val dto = api.buscarUsuario(id)
-            dto.toEntity()
-        } catch (e: Exception) {
-            dao.buscarUsuario(id)?.toEntity() ?: throw e
-        }
-    }
-}
-```
-
-#### Presentation (UI)
-
-ViewModels e Composables:
-
-```
-@HiltViewModel
-class UsuarioViewModel @Inject constructor(
-    private val buscarUsuario: BuscarUsuarioUseCase
-) : ViewModel() {
-    // implementação
-}
-```
-
-### Dependencies Rule
-
-[DIAGRAMA: Presentation → Domain ← Data]
-
-Presentation conhece Domain
-Domain NÃO conhece ninguém
-Data implementa Domain
 
 ---
 
-# MÓDULO 4 — INJEÇÃO DE DEPENDÊNCIA
+## 3.4 Clean Architecture - Explicação Completa
 
-Injeção de Dependência (DI) é uma técnica para fornecer dependências automatizadamente.
+### O que é Clean Architecture?
 
-## 4.1 Hilt
+Clean Architecture é organizar o código em **camadas** com responsabilidades separadas:
 
-Hilt é a solução oficial do Google baseada em Dagger.
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│       CLEAN ARCHITECTURE                 │
+├─────────────────────────────────────────┤
+│                                          │
+│  ┌─────────────────────────────────┐  │
+│  │      PRESENTATION                │  │
+│  │  Compose UI | ViewModel | Nav    │  │
+│  │                                 │  │
+│  │  Depende de: Domain             │  │
+│  └─────────────┬───────────────────┘  │
+│                │                      │
+│                ↓ usa                  │
+│  ┌─────────────────────────────────┐  │
+│  │         DOMAIN                   │  │
+│  │  Use Cases | Entities | Interf.  │  │
+│  │                                 │  │
+│  │  NÃO DEPENDE DE NADA!           │  │
+│  └─────────────┬───────────────────┘  │
+│                │                      │
+│                ↓ implementa          │
+│  ┌─────────────────────────────────┐  │
+│  │          DATA                    │  │
+│  │  Repos. Impl | API(Retrofit) |  │  │
+│  │  Room Database                  │  │
+│  │                                 │  │
+│  │  Implementa interfaces de Domain│  │
+│  └─────────────────────────────────┘  │
+│                                          │
+│  REGRA: Dependências apontam para dentro!│
+└─────────────────────────────────────────┘
+```
+
+### Por que usar?
+
+1. **Código testável** - Use Cases sem dependências
+2. **Código reutilizável** - interfaces definidas
+3. **Manutenção** - camadas isoladas
+4. **Flexibilidade** - trocar implementação fácil
+
+### Estrutura
+
+```
+app/src/main/java/com/projeto/
+├── data/
+│   ├── remote/
+│   │   ├── api/
+│   │   └── dto/
+│   ├── local/
+│   │   └── dao/
+│   └── repository/
+├── domain/
+│   ├── model/
+│   ├── repository/  (interfaces)
+│   └── usecase/
+├── presentation/
+│   ├── components/
+│   ├── screens/
+│   ├── navigation/
+│   └── theme/
+└── di/
+```
+
+### Exemplo Use Case
+
+```
+class BuscarTarefasUseCase(
+    private val repository: TarefaRepository
+) {
+    operator fun invoke(): Flow<List<Tarefa>> {
+        return repository.buscarTarefas()
+    }
+}
+```
+
+### Exemplo Repository Interface (Domain)
+
+```
+interface TarefaRepository {
+    fun buscarTarefas(): Flow<List<Tarefa>>
+    suspend fun adicionarTarefa(tarefa: Tarefa)
+    suspend fun concluirTarefa(id: String)
+    suspend fun excluirTarefa(id: String)
+}
+```
+
+### Exemplo Repository Implementation (Data)
+
+```
+class TarefaRepositoryImpl(
+    private val api: TarefaApi,
+    private val dao: TarefaDao
+) : TarefaRepository {
+    
+    override fun buscarTarefas(): Flow<List<Tarefa>> {
+        return dao.buscarTodos().map { lista ->
+            lista.map { it.toDomain() }
+        }
+    }
+    
+    override suspend fun adicionarTarefa(tarefa: Tarefa) {
+        dao.inserir(tarefa.toEntity())
+    }
+    
+    // ...implementação completa
+}
+```
+
+---
+
+# CAPÍTULO 4: INJEÇÃO DE DEPENDÊNCIA
+
+## 4.1 O que é DI e para que serve?
+
+### O problema sem DI
+
+```
+// ❌ PROBLEMA: dependências hardcoded
+class MainViewModel : ViewModel() {
+    private val repository = UsuarioRepository()  // não consegue testar!
+    private val api = RetrofitApi()           // não consegue trocar!
+}
+```
+
+### A solução com DI
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│      DEPENDENCY INJECTION               │
+├─────────────────────────────────────────┤
+│                                          │
+│  Sem DI:                    Com DI:       │
+│  ┌──────────┐            ┌──────────┐    │
+│  │ViewModel │            │ViewModel │    │
+│  │ cria   │              │recebe   │    │
+│  │  └─────┼─┐           │   ┌─────┘│    │
+│  └───────▼┘            └────▼─────┘    │
+│       API                 API (injetada)  │
+│                                          │
+│  Problema:               Solução:        │
+│  ❌ Difícil testar      ✅ Fácil testar │
+│  ❌ Acoplado            ✅ Desacoplado  │
+│  ❌ Inflexível         ✅ Flexível      │
+└─────────────────────────────────────────┘
+```
+
+### Benefícios do DI
+
+1. **Testabilidade** - Use mocks em testes
+2. **Desacoplamento** - classes independentes
+3. **Reutilização** - trocar implementações
+4. **Manutenção** - Mudar um lugar só
+
+## 4.2 Hilt - Guia Completo
 
 ### Configuração
 
@@ -1788,89 +1631,50 @@ dependencies {
 }
 ```
 
-```
-// build.gradle (project)
-buildscript {
-    classpath 'com.google.dagger:hilt-android-gradle-plugin:2.48'
-}
-```
+### Anotações
 
-### @HiltAndroidApp
+| Anotação | Para que serve | Onde usar |
+|----------|--------------|----------|
+| @HiltAndroidApp | Inicializa Hilt | Application |
+| @AndroidEntryPoint | Permite injeção | Activity |
+| @HiltViewModel | Injeta no ViewModel | ViewModel |
+| @Module | Define configurações | Classe |
+| @Provides | Fornece instância | Método |
+| @Inject | Injeta dependência | Construtor |
 
-Aplicação Hilt:
+### Exemplo Application
 
 ```
 @HiltAndroidApp
-class Aplicacao : Application()
+class App : Application()
 ```
 
-### @AndroidEntryPoint
-
-Activity ou Fragment com injeção:
+### Exemplo Activity
 
 ```
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var repository: UsuarioRepository
+    @Inject lateinit var repository: UsuarioRepository
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            // código Compose
-        }
+        // repository está disponível!
     }
 }
 ```
 
-### @Module e @Provides
-
-Módulos de configuração:
-
-```
-@Module
-@InstallIn(SingletonComponent::class)
-object NetworkModule {
-    
-    @Provides
-    @Singleton
-    fun providesRetrofit(): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://api.example.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-    
-    @Provides
-    @Singleton
-    fun providesApi(retrofit: Retrofit): UsuarioApi {
-        return retrofit.create(UsuarioApi::class.java)
-    }
-}
-```
-
-### @Inject direto no construtor
-
-```
-class UsuarioRepository @Inject constructor(
-    private val api: UsuarioApi
-) : IUsuarioRepository {
-    override suspend fun buscarUsuario(id: String) = api.buscar(id)
-}
-```
-
-### @ViewModel com Hilt
+### Exemplo ViewModel
 
 ```
 @HiltViewModel
 class UsuarioViewModel @Inject constructor(
-    private val repository: IUsuarioRepository
+    private val repository: UsuarioRepository  // injetado automaticamente!
 ) : ViewModel() {
-    // ViewModel com dependências injetadas
+    // código
 }
 ```
 
-### @Module para dependências externas
+### Exemplo Module
 
 ```
 @Module
@@ -1879,144 +1683,347 @@ object AppModule {
     
     @Provides
     @Singleton
-    fun provideContext(@ApplicationContext context: Context): Context {
-        return context
+    fun provideRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideApi(retrofit: Retrofit): UsuarioApi {
+        return retrofit.create(UsuarioApi::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideRepository(api: UsuarioApi): UsuarioRepository {
+        return UsuarioRepositoryImpl(api)
     }
 }
 ```
 
-## 4.2 Koin
+## 4.3 Koin - Guia Completo
 
-Koin é uma solução mais simples e leve.
+### Quando usar Koin?
 
-### Configuração
+- Projeto pequeño/médio
+- Simplicidade preferida
+- Curva de aprendizado menor
+
+### Quando usar Hilt?
+
+- Projeto grande
+- Performance maxima necessária
+-time grande
+
+### Configuração Koin
 
 ```
 // build.gradle
 dependencies {
     implementation 'io.insert-koin:koin-android:3.5.0'
-    implementation 'io.insert-koin:koin-androidx-compose:3.5.0'
 }
 ```
 
-### Inicialização
+### Módulos Koin
 
 ```
-class Aplicacao : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        
-        koinApplication {
-            modules(moduloApp, moduloNetwork, moduloRepo)
-        }
-    }
-}
-```
-
-### DSL do Koin
-
-```
-val moduloApp = module {
+val appModule = module {
     single { provideContext(androidContext()) }
 }
 
-val moduloNetwork = module {
+val networkModule = module {
     single {
         Retrofit.Builder()
             .baseUrl("https://api.com/")
-            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
     
     single { get<Retrofit>().create(UsuarioApi::class.java) }
 }
 
-val moduloRepository = module {
+val repositoryModule = module {
     single<UsuarioRepository> { UsuarioRepositoryImpl(get()) }
 }
 
-val moduloViewModel = viewModel {
+val viewModelModule = viewModel {
     UsuarioViewModel(get())
 }
 
-val KoinModules = listOf(
-    moduloApp,
-    moduloNetwork,
-    moduloRepository,
-    moduloViewModel
+val allModules = listOf(
+    appModule,
+    networkModule,
+    repositoryModule,
+    viewModelModule
 )
+```
+
+### Inicialização
+
+```
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        koinApplication {
+            modules(allModules)
+        }
+    }
+}
 ```
 
 ### single vs factory
 
-```
-// single — mesma instância em todo lugar
-single<UsuarioRepository> { UsuarioRepositoryImpl(get()) }
-
-// factory — nova instância a cada solicitação
-factory<UsuarioUseCase> { UsuarioUseCase(get()) }
-```
-
-### viewModel no Koin
-
-```
-@Composable
-fun TelaKoin() {
-    val viewModel: TarefaViewModel = koinViewModel()
-    // implementação
-}
-```
-
-### Inicialização manual
-
-```
-// Sem startKoin
-val app = koinApplication {
-    modules(listaModulos)
-}
-```
-
-## 4.3 Comparação Hilt vs Koin
-
-| Aspecto | Hilt | Koin |
-|---------|------|------|
-| Complexidade | Alta | Baixa |
-| Performance | Excelente | Boa |
-| Geração de código | Sim (APT) | Não |
-| Documentação | Boa | Boa |
-| Curva de aprendizado | Alta | Baixa |
-| Tamanho APK | +100KB | ~50KB |
-| Retrofit/Dagger | Usa | API própria |
-
-## 4.4 Quando usar cada um
-
-Use Koin quando:
-
-- Projeto pequeno/médio
-- Necessidade de simplicidade
-- Equipe pequena
-
-Use Hilt quando:
-
-- Projeto grande
-- Necessidade de performance
-- Equipe grande
-- Código complexo de teste
+| Tipo | Quando usar |
+|------|------------|
+| single | Mesma instância em todo lugar (API, Repository) |
+| factory | Nova instância a cada uso (ViewModel, UseCase) |
 
 ---
 
-# MÓDULO 5 — NETWORKING
+# CAPÍTULO 5: ROOM DATABASE
 
-Networking é a comunicação do app com servidores e APIs externas.
+## 5.1 O que é Room?
 
-## 5.1 Retrofit
+Room é a biblioteca oficial do Google para persistência SQLite.
 
-Retrofit é o cliente HTTP mais usado em Android.
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│             ROOM                        │
+├─────────────────────────────────────────┤
+│                                          │
+│ Room = Abstração sobre SQLite            │
+│                                          │
+│ SQLite Puro:                            │
+│ - Muita linha de código                 │
+│ - Erros só em runtime                   │
+│ - Queries como strings                 │
+│                                          │
+│ Room:                                   │
+│ - Poucas linhas                         │
+│ - Erros em compile time                │
+│ - Queries tipe-safe                    │
+│ - Suporte a Flow                       │
+└─────────────────────────────────────────┘
+```
 
-### Configuração
+### Para que serve?
+
+- Armazenar dados localmente no dispositivo
+- Criar app que funciona offline
+- Cache de dados da API
+- Dados que não precisam estar em servidor
+
+### Quando NÃO usar Room?
+
+- Dados precisam ser compartilhados (use Firebase)
+- Dados muito grandes (use backend)
+- Dados simples (use DataStore/SharedPreferences)
+
+## 5.2 Configuração
 
 ```
 // build.gradle
+plugins {
+    id 'com.google.devtools.ksp'
+}
+
+dependencies {
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    ksp 'androidx.room:room-compiler:2.6.1'
+}
+```
+
+## 5.3 Entity - Tabela
+
+```
+@Entity(tableName = "tarefas")
+data class TarefaEntity(
+    @PrimaryKey
+    val id: String,
+    
+    @ColumnInfo(name = "titulo")
+    val titulo: String,
+    
+    @ColumnInfo(name = "descricao")
+    val descricao: String,
+    
+    @ColumnInfo(name = "concluida")
+    val concluida: Boolean = false,
+    
+    @ColumnInfo(name = "data_criacao")
+    val dataCriacao: Long = System.currentTimeMillis()
+)
+```
+
+## 5.4 DAO - Operações
+
+```
+@Dao
+interface TarefaDao {
+    
+    // SELECT
+    @Query("SELECT * FROM tarefas ORDER BY data_criacao DESC")
+    fun buscarTodos(): Flow<List<TarefaEntity>>
+    
+    @Query("SELECT * FROM tarefas WHERE id = :id")
+    suspend fun buscarPorId(id: String): TarefaEntity?
+    
+    // INSERT
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun inserir(tarefa: TarefaEntity)
+    
+    // UPDATE
+    @Query("UPDATE tarefas SET concluida = 1 WHERE id = :id")
+    suspend fun concluir(id: String)
+    
+    @Update
+    suspend fun atualizar(tarefa: TarefaEntity)
+    
+    // DELETE
+    @Delete
+    suspend fun excluir(tarefa: TarefaEntity)
+    
+    @Query("DELETE FROM tarefas WHERE id = :id")
+    suspend fun excluirPorId(id: String)
+    
+    // Contagem
+    @Query("SELECT COUNT(*) FROM tarefas")
+    suspend fun contar(): Int
+}
+```
+
+## 5.5 Database
+
+```
+@Database(
+    entities = [TarefaEntity::class],
+    version = 1,
+    exportSchema = true
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun tarefaDao(): TarefaDao
+    
+    companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+        
+        fun getInstance(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "app_database"
+                )
+                .fallbackToDestructiveMigration()
+                .build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
+}
+```
+
+## 5.6 Repository com Room
+
+```
+class TarefaRepositoryImpl(
+    private val dao: TarefaDao
+) : TarefaRepository {
+    
+    override fun buscarTarefas(): Flow<List<Tarefa>> {
+        return dao.buscarTodos().map { lista ->
+            lista.map { it.toDomain() }
+        }
+    }
+    
+    override suspend fun adicionarTarefa(tarefa: Tarefa) {
+        dao.inserir(tarefa.toEntity())
+    }
+    
+    override suspend fun concluirTarefa(id: String) {
+        dao.concluir(id)
+    }
+    
+    override suspend fun excluirTarefa(id: String) {
+        dao.excluirPorId(id)
+    }
+    
+    private fun TarefaEntity.toDomain() = Tarefa(id, titulo, descricao, concluida, dataCriacao)
+    private fun Tarefa.toEntity() = TarefaEntity(id, titulo, descricao, concluida, dataCriacao)
+}
+```
+
+## 5.7 Room + Flow = Automagia
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│       ROOM + FLOW = MAGIC                │
+├─────────────────────────────────────────┤
+│                                          │
+│  Dao retorna Flow              │
+│       ↓                              │
+│  Room detecta mudança no banco          │
+│       ↓                              │
+│  Flow emite nova lista           │
+│       ↓                              │
+│  ViewModel coleta Flow          │
+│       ↓                              │
+│  Estado atualiza               │
+│       ↓                              │
+│  UI recompõe automaticamente! 🎉         │
+│                                          │
+│  NÃO PRECISA:                          │
+│  - Observer manual                    │
+│  - notifyDataSetChanged              │
+│  - LiveData.setValue manual            │
+└─────────────────────────────────────────┘
+```
+
+---
+
+# CAPÍTULO 6: RETROFIT NETWORKING
+
+## 6.1 O que é Retrofit?
+
+Retrofit é um cliente HTTP que transforma sua API em interface Kotlin.
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│            RETROFIT                      │
+├─────────────────────────────────────────┤
+│                                          │
+│ 接口API:                                  │
+│ interface UsuarioApi {                    │
+│     @GET("usuarios")                    │
+│     suspend fun listar(): List<UsuarioDto   │
+│                                          │
+│     @POST("usuarios")                  │
+│     suspend fun criar(@Body u: UsuarioDto)   │
+│ }                                     │
+│       ↓                                │
+│ Retrofit gera implementação            │
+│       ↓                                │
+│ HTTP requests reais!                 │
+│                                          ��
+��─────────────────────────────────────────┘
+```
+
+### Para que serve?
+
+- Comunicar com APIs REST
+- Baixar/submeter dados
+- Autenticação
+
+## 6.2 Configuração
+
+```
 dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
@@ -2024,7 +2031,7 @@ dependencies {
 }
 ```
 
-### Interface API
+## 6.3 Interface API
 
 ```
 interface UsuarioApi {
@@ -2049,667 +2056,969 @@ interface UsuarioApi {
 }
 ```
 
-### DTOs
+## 6.4 DTO - Data Transfer Object
+
+DTO é o formato que vem da API:
 
 ```
 data class UsuarioDto(
+    @SerializedName("id")
     val id: String?,
+    
+    @SerializedName("nome")
     val nome: String,
+    
+    @SerializedName("email")
     val email: String,
+    
+    @SerializedName("telefone")
     val telefone: String?
 )
 ```
 
-### Configuração do Retrofit
+## 6.5 Configuração e Interceptors
 
 ```
-object RetrofitClient {
-    
-    private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
-    
-    private val authInterceptor = Interceptor { chain ->
-        val request = chain.request().newBuilder()
-            .addHeader("Authorization", "Bearer $token")
-            .addHeader("Content-Type", "application/json")
-            .build()
-        chain.proceed(request)
-    }
-    
-    private val client = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
-        .addInterceptor(logging)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
-    
-    val retrofit = Retrofit.Builder()
-        .baseUrl("https://api.projeto.com/")
-        .client(client)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-    
-    val api: UsuarioApi = retrofit.create(UsuarioApi::class.java)
-}
-```
-
-### Interceptors
-
-#### Logging Interceptor
-
-```
-val logging = HttpLoggingInterceptor().apply {
-    level = HttpLoggingInterceptor.Level.HEADERS
-}
-```
-
-#### Auth Interceptor
-
-```
-val authInterceptor = Interceptor { chain ->
-    val prefs = getSharedPreferences("auth", MODE_PRIVATE)
-    val token = prefs.getString("token", null)
-    
-    val request = chain.request().newBuilder().apply {
-        token?.let {
-            addHeader("Authorization", "Bearer $it")
-        }
-    }.build()
-    
-    chain.proceed(request)
-}
-```
-
-#### Error Handling Interceptor
-
-```
-val errorInterceptor = Interceptor { chain ->
-    val response = chain.proceed(chain.request())
-    
-    if (!response.isSuccessful) {
-        when (response.code) {
-            401 -> throw UnauthorizedException()
-            403 -> throw ForbiddenException()
-            404 -> throw NotFoundException()
-            500 -> throw ServerException()
-        }
-    }
-    
-    response
-}
-```
-
-### Tratamento de Erros
-
-```
-sealed class Resultado<out T> {
-    data class Sucesso<T>(val dados: T) : Resultado<T>()
-    data class Erro(val mensagem: String, val codigo: Int? = null) : Resultado<Nothing>()
-}
-
-suspend fun <T> safeApiCall(apiCall: suspend () -> T): Resultado<T> {
-    return try {
-        Resultado.Sucesso(apiCall())
-    } catch (e: HttpException) {
-        Resultado.Erro(e.message(), e.code())
-    } catch (e: Exception) {
-        Resultado.Erro(e.message ?: "Erro desconhecido")
-    }
-}
-```
-
-## 5.2 Ktor Client
-
-Ktor é o cliente HTTP da JetBrains.
-
-### Configuração
-
-```
-// build.gradle
-plugins {
-    id 'org.jetbrains.kotlin.plugin.serialization'
-}
-
-dependencies {
-    implementation 'io.ktor:ktor-client-core:2.3.7'
-    implementation 'io.ktor:ktor-client-android:2.3.7'
-    implementation 'io.ktor:ktor-client-content-negotiation:2.3.7'
-    implementation 'io.ktor:ktor-serialization-gson:2.3.7'
-    implementation 'io.ktor:ktor-client-logging:2.3.7'
-}
-```
-
-### Configuração básica
-
-```
-val httpClient = HttpClient(Android) {
-    install(ContentNegotiation) {
-        gson()
-    }
-    
-    install(Logging) {
-        logger = Logger.DEFAULT
-        level = LogLevel.ALL
-    }
-    
-    install(HttpTimeout) {
-        requestTimeoutMillis = 30000
-        connectTimeoutMillis = 30000
-        socketTimeoutMillis = 30000
-    }
-    
-    defaultRequest {
-        header("Content-Type", "application/json")
-    }
-}
-```
-
-### Requests com Ktor
-
-```
-// GET
-suspend fun listarUsuarios(): List<UsuarioDto> {
-    return httpClient.get("https://api.com/usuarios").body()
-}
-
-// GET com parâmetros
-suspend fun buscarUsuario(id: String): UsuarioDto {
-    return httpClient.get("https://api.com/usuarios/$id").body()
-}
-
-// POST
-suspend fun criarUsuario(usuario: UsuarioDto): UsuarioDto {
-    return httpClient.post("https://api.com/usuarios") {
-        setBody(usuario)
-    }.body()
-}
-
-// PUT
-suspend fun atualizarUsuario(id: String, usuario: UsuarioDto): UsuarioDto {
-    return httpClient.put("https://api.com/usuarios/$id") {
-        setBody(usuario)
-    }.body()
-}
-
-// DELETE
-suspend fun excluirUsuario(id: String) {
-    httpClient.delete("https://api.com/usuarios/$id")
-}
-```
-
-### Interceptors no Ktor
-
-```
-val httpClient = HttpClient(Android) {
-    engine {
-        addInterceptor { chain ->
+val retrofit = Retrofit.Builder()
+    .baseUrl("https://api.com/")
+    .client(OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
+        .addInterceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("Authorization", "Bearer $token")
                 .build()
             chain.proceed(request)
         }
-    }
-}
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build())
+    .addConverterFactory(GsonConverterFactory.create())
+    .build()
+
+val api = retrofit.create(UsuarioApi::class.java)
 ```
 
-## 5.3 Conceitos Importantes
+### Interceptors - Para que servem?
 
-### REST API
-
-Princípios REST:
-
-```
-GET    — Ler      — /recurso     → Listar
-GET    — Ler      → /recurso/id → Buscar um
-POST   — Criar    → /recurso    → Criar
-PUT    — Atualizar todo → /recurso/id → Atualizar
-PATCH  — Atualizar parte → /recurso/id → Atualizar parcial
-DELETE — Deletar → /recurso/id → Remover
-```
-
-### JSON Parsing
-
-```
-// Gson
-val gson = Gson()
-val json = gson.toJson(objeto)
-val objeto = gson.fromJson(json, Tipo::class.java)
-
-// Moshi
-val moshi = Moshi.Builder().build()
-val adapter = moshi.adapter(Tipo::class.java)
-val json = adapter.toJson(objeto)
-val objeto = adapter.fromJson(json)
-```
-
-### DTO vs Domain Model
-
-DTO (Data Transfer Object) — formato da API:
-
-```
-data class UsuarioDto(
-    val id: String?,
-    val nome: String,
-    val email: String,
-    val endereco: EnderecoDto?
-)
-```
-
-Domain Model — formato interno:
-
-```
-data class Usuario(
-    val id: String,
-    val nome: String,
-    val email: Email,
-    val endereco: Endereco?
-)
-```
-
-### Mapper
-
-Transformar entre modelos:
-
-```
-fun UsuarioDto.toEntity(): Usuario {
-    return Usuario(
-        id = id ?: "",
-        nome = nome,
-        email = Email(email),
-        endereco = endereco?.toEntity()
-    )
-}
-
-fun Usuario.toDto(): UsuarioDto {
-    return UsuarioDto(
-        id = id,
-        nome = nome,
-        email = email.valor,
-        endereco = endereco?.toDto()
-    )
-}
-```
+| Interceptor | Para que serve | Exemplo |
+|-----------|-------------|--------|
+| Auth | Adicionar token em todas requisições | `Authorization: Bearer token123` |
+| Logging | Debugar requisições/respostas | Log no logcat |
+| Error | Tratar erros HTTP | Throw custom exceptions |
 
 ---
 
-# MÓDULO 6 — COROUTINES E FLOW
+# CAPÍTULO 7: COROUTINES E FLOW
 
-Coroutines e Flow são fundamentais para programação assíncrona moderna.
+## 7.1 O que são Coroutines?
 
-## 6.1 Coroutines
+Coroutines permitem código **assíncrono** (não bloqueante).
 
-Coroutines permitem escrever código assíncrono de forma sequencial.
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│          COROUTINES                      │
+├─────────────────────────────────────────┤
+│                                          │
+│ THREAD (blocking):                      │
+│                                         │
+│  ┌─────────┐                           │
+│  │ Thread  │                           │
+│  ├─────────┤                           │
+│  │ código │ ── execute──────→ 5s   │
+│  ├─────────┤                           │
+│  │ espera │ ─────────────────────→    │
+│  └─────────┘                           │
+│                                          │
+│ COROUTINE (não-blocking):              │
+│                                          │
+│  ┌─────────┐                           │
+│  │ Thread  │                           │
+│  ├��────────┤                           │
+│  │ corout  │ ── suspende ── 5s ──    │
+│  │        │                           │
+│  └─────────┘                           │
+│       ↓                              │
+│  Thread disponível para outras tarefas!  │
+└─────────────────────────────────────────┘
+```
 
-### launch — iniciar execução
+### launch vs async
+
+| Função | Retorna | Quando usar |
+|--------|--------|------------|
+| launch | Job (não retorna valor) | fire-and-forget |
+| async | Deferred<T> (retorna valor) | precisa do resultado |
 
 ```
+// launch - não precisa do resultado
 viewModelScope.launch {
-    // código executado em-background
-    val dados = repository.buscarDados()
-    
-    // atualizações de UI
-    _estado.value = dados
+    repository.buscarDados()
 }
-```
 
-### async — retornar valor
-
-```
+// async - precisa do resultado
 viewModelScope.launch {
-    val deferred = async { buscarUsuario(id) }
+    val deferred = async { api.buscarUsuario() }
     val usuario = deferred.await()
-}
-```
-
-### await com múltiplas requisições
-
-```
-viewModelScope.launch {
-    val usuario = async { api.buscarUsuario() }
-    val posts = async { api.buscarPosts() }
-    
-    val dados = Dados(
-        usuario = usuario.await(),
-        posts = posts.await()
-    )
 }
 ```
 
 ### Dispatchers
 
-Controlam a thread de execução:
-
-```
-Dispatchers.Main       // UI thread (Android main thread)
-Dispatchers.IO        // Operações de rede/disco
-Dispatchers.Default  // CPU intensivo
-Dispatchers.Unconfined
-```
+| Dispatcher | Para que serve |
+|------------|-------------|
+| Main | UI thread |
+| IO | Rede/disco (，推荐 para API) |
+| Default | CPU intensivo |
 
 ```
 viewModelScope.launch(Dispatchers.IO) {
-    // executa em IO
-    val dados = api.buscarDados()
-    
+    val dados = api.buscar()
     withContext(Dispatchers.Main) {
-        // volta para UI
-        updateUI(dados)
+        estado.value = dados
     }
 }
 ```
 
-### suspend functions
+## 7.2 Flow - Explicação Completa
 
-Funções que podem ser pausadas:
+### O que é Flow?
 
+Flow é uma **sequência de dados assíncronos**.
+
+[DIAGRAMA]
 ```
-suspend fun buscarDados(): Dados {
-    return withContext(Dispatchers.IO) {
-        api.buscarDados()
-    }
-}
-```
-
-## 6.2 Flow
-
-Flow é uma sequência assíncrona de dados.
-
-### Criar Flow
-
-```
-val fluxo = flow {
-    emit(1)
-    delay(100)
-    emit(2)
-    delay(100)
-    emit(3)
-}
+┌─────────────────────────────────────────┐
+│              FLOW                        │
+├─────────────────────────────────────────┤
+│                                          │
+│ Flow emite valores ao longo do tempo:         │
+│                                          │
+│  ┌────┐  ┌────┐  ┌────┐         │
+│  │ v1 │→ │ v2 │→ │ v3 │→ ...    │
+│  └────┘  └────┘  └────┘         │
+│                                          │
+│ Útil para:                            │
+│ - Dados em tempo real                 │
+│ - Novas mensagens                 │
+│ - Estado reativo                  │
+└─────────────────────────────────────────┘
 ```
 
-### Flow de repository
+### Operadores Flow
+
+| Operador | Para que serve | Exemplo |
+|---------|-------------|--------|
+| map | Transformar valores | `flow.map { it * 2 }` |
+| filter | Filtrar valores | `flow.filter { it > 2 }` |
+| take | Limitar quantidade | `flow.take(10)` |
+
+### StateFlow
+
+Mantém estado atual:
 
 ```
-class Repository {
-    fun buscarUsuarios(): Flow<List<Usuario>> = flow {
-        while (true) {
-            emit(api.buscarUsuarios())
-            delay(30_000)  // polling a cada 30s
-        }
-    }.flowOn(Dispatchers.IO)
-}
-```
-
-### Operadores
-
-#### map — transformar
-
-```
-flowOf(1, 2, 3)
-    .map { it * 2 }
-    .collect { println(it) }
-// Output: 2, 4, 6
-```
-
-#### filter — filtrar
-
-```
-flowOf(1, 2, 3, 4, 5)
-    .filter { it > 2 }
-    .collect { println(it) }
-// Output: 3, 4, 5
-```
-
-#### take — limitar
-
-```
-flowOf(1, 2, 3, 4, 5)
-    .take(3)
-    .collect { println(it) }
-// Output: 1, 2, 3
-```
-
-#### distinctUntilChanged — evitar duplicados
-
-```
-flowOf(1, 1, 2, 2, 3)
-    .distinctUntilChanged()
-    .collect { println(it) }
-// Output: 1, 2, 3
-```
-
-### collect — coletar valores
-
-```
-viewModelScope.launch {
-   repository.buscarUsuarios()
-        .catch { e -> erro.value = e.message }
-        .collect { lista -> usuarios.value = lista }
-}
-```
-
-## 6.3 StateFlow
-
-StateFlow é um Flow que mantém estado:
-
-```
-val _estado = MutableStateFlow(Estado())
+private val _estado = MutableStateFlow(Estado())
 val estado: StateFlow<Estado> = _estado
 
-// Atualizar
-_estado.value = _estado.value.copy(isLoading = false)
+_estado.value = Estado()  // atualizar
 
-// Collecting
-val estado by viewModel.estado.collectAsState()
+val estado by viewModel.estado.collectAsState()  // coletar no Compose
 ```
 
-### Exemplo completo
+### SharedFlow
+
+Para eventos únicos:
 
 ```
-@HiltViewModel
-class TarefaViewModel @Inject constructor(
-    private val repository: TarefaRepository
-) : ViewModel() {
-    
-    private val _estado = MutableStateFlow(EstadoTela())
-    val estado: StateFlow<EstadoTela> = _estado
-    
-    init {
-        carregarTarefas()
-    }
-    
-    fun carregarTarefas() {
-        viewModelScope.launch {
-            _estado.value = _estado.value.copy(isLoading = true)
-            
-            repository.buscarTarefas()
-                .catch { e ->
-                    _estado.value = _estado.value.copy(
-                        isLoading = false,
-                        erro = e.message
-                    )
-                }
-                .collect { tarefas ->
-                    _estado.value = _estado.value.copy(
-                        isLoading = false,
-                        tarefas = tarefas
-                    )
-                }
-        }
-    }
-}
-```
-
-## 6.4 SharedFlow
-
-SharedFlow emite eventos únicos:
-
-```
-val _efeitos = MutableSharedFlow<Efeito>()
+private val _efeitos = MutableSharedFlow<Efeito>()
 val efeitos: SharedFlow<Efeito> = _efeitos
 
-// Emitir efeito
-viewModelScope.launch {
-    _efeitos.emit(Efeito.NavegarPara(tela))
-}
-```
+_efeitos.emit(Efeito.NavegarPara("tela"))  // emitir
 
-### collect no Compose
-
-```
 LaunchedEffect(Unit) {
     viewModel.efeitos.collect { efeito ->
-        when (efeito) {
-            is Efeito.Nav -> navController.navigate(efeito.rota)
-            is Efeito.Snackbar -> snackbar.show(efeito.msg)
-        }
+        // processar
     }
 }
-```
-
-## 6.5 Channels
-
-Channel é um管道 entre coroutines:
-
-```
-val canal = Channel<String>()
-
-// Enviar
-viewModelScope.launch {
-    canal.send("mensagem")
-}
-
-// Receber
-viewModelScope.launch {
-    val msg = canal.receive()
-}
-```
-
-## 6.6 Tratamento de Erros
-
-```
-viewModelScope.launch {
-    flow {
-        emit(api.buscar())
-    }.catch { erro ->
-        emit(EstadoDeErro(erro.message))
-    }.collect { estado ->
-        _estado.value = estado
-    }
-}
-```
-
-```
-flowOf(1, 2, 3)
-    .catch { e -> println("Erro: $e") }
-    .onEach { println(it) }
-    .launchIn(viewModelScope)
 ```
 
 ---
 
-# MÓDULO 7 — PERSISTÊNCIA
+# CAPÍTULO 8: FIREBASE
 
-Persistência salva dados localmente.
+## 8.1 Firebase Auth
 
-## 7.1 SharedPreferences
+### Para que serve?
 
-Para dados pequenos e simples:
+Autenticação de usuários (email, Google, Facebook, etc).
 
 ```
-val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+val auth = Firebase.auth
 
-// Salvar
-prefs.edit().apply {
-    putString("nome", "João")
-    putInt("idade", 25)
-    putBoolean("ativo", true)
-    apply()
+// Criar conta
+auth.createUserWithEmailAndPassword(email, senha)
+    .addOnSuccessListener { result -> }
+    .addOnFailureListener { erro -> }
+
+// Login
+auth.signInWithEmailAndPassword(email, senha)
+
+// Logout
+auth.signOut()
+```
+
+## 8.2 Firestore
+
+### Para que serve?
+
+Banco de dados NoSQL em tempo real.
+
+```
+val db = Firebase.firestore
+
+// CREATE
+db.collection("usuarios").document("id").set(mapOf("nome" to "João"))
+
+// READ
+db.collection("usuarios").document("id").get()
+
+// READ realtime
+db.collection("usuarios").addSnapshotListener()
+
+// UPDATE
+db.collection("usuarios").document("id").update("nome", "Maria")
+
+// DELETE
+db.collection("usuarios").document("id").delete()
+```
+
+## 8.3 Analytics
+
+### Para que serve?
+
+Registrar eventos de uso.
+
+```
+val analytics = Firebase.analytics
+
+analytics.logEvent("botao_salvar") {
+    param("tela", "cadastro")
 }
-
-// Ler
-val nome = prefs.getString("nome", "Padrão")
-val idade = prefs.getInt("idade", 0)
-val ativo = prefs.getBoolean("ativo", false)
-
-// Remover
-prefs.edit().remove("nome").apply()
-prefs.edit().clear().apply()
 ```
 
-### Preferências com DataStore
+## 8.4 Crashlytics
+
+### Para que serve?
+
+Capturar erros em produção.
+
+Erros são capturados automaticamente!
 
 ```
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+// Log customizado
+Firebase.crashlytics.log("mensagem")
+
+// Identificar usuário
+Firebase.crashlytics.setUserId("user123")
 ```
 
-## 7.2 DataStore
+---
 
-DataStore é a替代 moderna:
+# CAPÍTULO 9: TESTES UNITÁRIOS
+
+## 9.1 Por que testar?
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│           TESTES                        │
+├─────────────────────────────────────────┤
+│                                          │
+│ SEM TESTES:            COM TESTES:          │
+│                                          │
+│ Deploy ──┐        Teste ────→ Deploy   │
+│  💥    │          ✅                 │
+│  Crash! │                          │
+│                                          │
+│ Problema:                  Solução:         │
+│ ❌ Bugs em prod         ✅ Bugs pegos   │
+│ ❌ Medo de mudar       ✅ Confiança   │
+│ ❌ Refatorar perigoso  ✅ Refatorar  │
+│                        seguro          │
+│                                          │
+│ O que teste faz:                       │
+│ ✅ Garante funcionamento           │
+│ ✅ Documenta código              │
+│ ✅ Evita regressões             │
+│ ✅ Confidence para mudar        │
+└─────────────────────────────────────────┘
+```
+
+## 9.2 JUnit - Guia Completo
+
+### O que é JUnit?
+
+JUnit é framework de testes para Kotlin/Java.
+
+### Anatomia de um teste
+
+```
+┌─────────────────────────────────────────┐
+│      ANATOMIA DE TESTE                  │
+├─────────────────────────��───────────────┤
+│                                          │
+│  @Test                      // 1. Marcador│
+│  fun teste_something() {    // 2. Nome   │
+│                                          │
+│      // 3. Arrange - Preparar        │
+│      val calc = Calculadora()          │
+│                                          │
+│      // 4. Act - Executar      │
+│      val result = calc.somar(2, 3)   │
+│                                          │
+│      // 5. Assert - Verificar    │
+│      assertEquals(5, result)        │
+│  }                                  │
+│                                          │
+│  Para entender:                     │
+│  1. Prepare dados                 │
+│  2. Execute ação                │
+│  3. Verifique resultado        │
+└─────────────────────────────────────────┘
+```
 
 ### Configuração
 
 ```
 // build.gradle
-dependencies {
-    implementation 'androidx.datastore:datastore-preferences:1.0.0'
+testImplementation 'junit:junit:4.13.2'
+```
+
+### Exemplo completo testável
+
+```
+// CLASSE PARA TESTAR
+class Calculadora {
+    fun somar(a: Int, b: Int) = a + b
+    fun subtrair(a: Int, b: Int) = a - b
+    fun multiplicar(a: Int, b: Int) = a * b
+    
+    fun dividir(a: Int, b: Int): Int {
+        require(b != 0) { "Divisor não pode ser zero" }
+        return a / b
+    }
+    
+    fun ehPar(numero: Int) = numero % 2 == 0
+}
+
+// TESTES
+class CalculadoraTest {
+    lateinit var calculadora: Calculadora
+    
+    @Before
+    fun setup() {
+        calculadora = Calculadora()
+    }
+    
+    // Teste de soma
+    @Test
+    fun teste_somar_dois_positivos() {
+        // Arrange
+        val a = 2
+        val b = 3
+        
+        // Act
+        val resultado = calculadora.somar(a, b)
+        
+        // Assert
+        assertEquals(5, resultado)
+    }
+    
+    // Teste de soma com negativos
+    @Test
+    fun teste_somar_negativos() {
+        val resultado = calculadora.somar(-5, -3)
+        assertEquals(-8, resultado)
+    }
+    
+    // Teste de divisão
+    @Test
+    fun teste_dividir() {
+        val resultado = calculadora.dividir(10, 2)
+        assertEquals(5, resultado)
+    }
+    
+    // Teste de exceção
+    @Test(expected = IllegalArgumentException::class)
+    fun teste_dividir_por_zero() {
+        calculadora.dividir(10, 0)
+    }
+    
+    // Teste booleano
+    @Test
+    fun teste_eh_par() {
+        assertTrue(calculadora.ehPar(2))
+        assertTrue(calculadora.ehPar(0))
+        assertFalse(calculadora.ehPar(3))
+    }
 }
 ```
 
-### Implementação
+### Assertions mais usadas
 
 ```
-class SettingsManager(private val dataStore: DataStore<Preferences>) {
+assertEquals(esperado, real)
+assertTrue(condicao)
+assertFalse(condicao)
+assertNull(obj)
+assertNotNull(obj)
+assertSame(obj1, obj2)  // mesmo objeto
+assertArrayEquals(arr1, arr2)
+```
+
+## 9.3 MockK - Guia Completo
+
+### O que é MockK?
+
+MockK é biblioteca para criar **mocks** (objetos falsos) em Kotlin.
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│             MOCKK                       │
+├─────────────────────────────────────────┤
+│                                          │
+│ O que é um Mock?                      │
+│                                          │
+│ Um objeto falso que simula o         │
+│ comportamento real:                   │
+│                                          │
+│  ┌──────────────────┐                │
+│  │ Repository    │ real         │
+│  │ (API, DB)   │ ← Cara!     │
+│  └─────────────┘                │
+│         ↓                    │
+│  ┌���─���───────────────┐                │
+│  │    MOCK       │ falso        │
+│  │ (controlado)  │ ← Barato!   │
+│  └──────────────────┘                │
+│                                          │
+│ Por que usar?                        │
+│ ✅ Testar sem dependências reais  │
+│ ✅ Controlar comportamento        │
+│ ✅ Verificar interações   │
+└─────────────────────────────────────────┘
+```
+
+### Configuração
+
+```
+testImplementation 'io.mockk:mockk:1.13.8'
+testImplementation 'io.mockk:mockk-android:1.13.8'
+```
+
+### Exemplos MockK
+
+#### Criar mock
+
+```
+val repository = mockk<UsuarioRepository>()
+```
+
+#### Definir comportamento
+
+```
+// Retornar valor
+every { repository.buscarUsuario("1") } returns Usuario("1", "João")
+
+// Retornar null
+every { repository.buscarUsuario("999") } returns null
+
+// Throw erro
+every { repository.buscarUsuario("1") } throws IOException("Erro!")
+```
+
+#### Verificar chamado
+
+```
+verify { repository.buscarUsuario("1") }
+verify(exactly = 1) { repository.buscarUsuario("1") }
+verify(none = 1) { repository.excluirUsuario(any()) }
+```
+
+#### Mock com Flow
+
+```
+val lista = listOf(Usuario("1", "João"))
+every { repository.buscarTodos() } returns flowOf(lista)
+```
+
+### Testando ViewModel com MockK
+
+```
+// ViewModel
+@HiltViewModel
+class UsuarioViewModel @Inject constructor(
+    private val repository: UsuarioRepository
+) : ViewModel() {
+    fun carregarUsuario(id: String) {
+        viewModelScope.launch {
+            val usuario = repository.buscarUsuario(id)
+            _estado.value = _estado.value.copy(usuario = usuario)
+        }
+    }
+}
+
+// Teste
+@ExtendWith(StandardTestExtension::class)
+class UsuarioViewModelTest {
+    private lateinit var viewModel: UsuarioViewModel
+    private lateinit var repository: UsuarioRepository
     
-    private val CHAVE_NOME = stringPreferencesKey("nome")
-    private val CHAVE_TEMA = stringPreferencesKey("tema")
+    @Before
+    fun setup() {
+        repository = mockk(relaxed = true)
+        viewModel = UsuarioViewModel(repository)
+    }
     
-    val nome: Flow<String> = dataStore.data.map { it[CHAVE_NOME] ?: "" }
-    val tema: Flow<String> = dataStore.data.map { it[CHAVE_TEMA] ?: "claro" }
+    @Test
+    fun teste_carregar_usuario() {
+        // Arrange
+        val usuarioMock = Usuario("1", "João", "joao@email.com")
+        every { runBlocking { repository.buscarUsuario("1") } returns usuarioMock }
+        
+        // Act
+        viewModel.carregarUsuario("1")
+        
+        // Assert
+        assertEquals(usuarioMock, viewModel.estado.value.usuario)
+    }
+}
+```
+
+## 9.4 Turbine - Guia Completo
+
+### O que é Turbine?
+
+Turbine é biblioteca para testar **Flow**.
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│            TURBINE                      │
+├─────────────────────────────────────────┤
+│                                          │
+│ Problema: Flow emite Muitos valores          │
+│ Como testar?                           │
+│                                          │
+│ SEM TURBINE:                        │
+│ flow.collect { valor ->              │
+│    assertEquals(esperado, valor)      │
+│ } // Só funciona para 1 valor!        │
+│                                          │
+│ COM TURBINE:                     │
+│ flow.test {                       │
+│    val v1 = awaitItem()           │
+│    val v2 = awaitItem()           │
+│    awaitComplete()               │
+│ } // Funciona para Todos!         │
+└─────────────────────────────────────────┘
+```
+
+### Configuração
+
+```
+testImplementation 'app.cash.turbine:turbine:1.0.0'
+```
+
+### Exemplos
+
+#### Testar Flow simples
+
+```
+@Test
+fun teste_flow_simples() = runTest {
+    val flow = flowOf(1, 2, 3)
     
-    suspend fun salvarNome(nome: String) {
-        dataStore.edit { prefs ->
-            prefs[CHAVE_NOME] = nome
+    flow.test {
+        assertEquals(1, awaitItem())
+        assertEquals(2, awaitItem())
+        assertEquals(3, awaitItem())
+        awaitComplete()
+    }
+}
+```
+
+#### Testar erro
+
+```
+@Test
+fun teste_erro() = runTest {
+    val flow = flow {
+        emit(1)
+        throw IOException("Erro!")
+    }
+    
+    flow.test {
+        assertEquals(1, awaitItem())
+        awaitError()  // Espera erro
+    }
+}
+```
+
+#### Testar ViewModel
+
+```
+@Test
+fun teste_viewmodel() = runTest {
+    val tarefas = listOf(Tarefa("1", "Tarefa 1"))
+    val repository = mockk<UsuarioRepository>()
+    every { repository.buscarTarefas() } returns flowOf(tarefas)
+    
+    val viewModel = TarefaViewModel(repository)
+    
+    viewModel.tarefas.test {
+        val resultado = awaitItem()
+        assertEquals(1, resultado.size)
+    }
+}
+```
+
+## 9.5 Testes de UI Compose
+
+### O que são?
+
+Testes que interagem diretamente com Composables.
+
+### Configuração
+
+```
+androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+```
+
+### Estrutura
+
+```
+@get:Rule
+val composeTestRule = createComposeRule()
+
+@Test
+fun teste_botao() {
+    // Arrange - criar UI
+    setContent {
+        Button(onClick = { }) {
+            Text("Clique")
         }
     }
     
-    suspend fun salvarTema(tema: String) {
-        dataStore.edit { prefs ->
-            prefs[CHAVE_TEMA] = tema
+    // Act - clicar
+    onNodeWithText("Clique").performClick()
+    
+    // Assert - verificar
+    onNodeWithText("Clique").assertHasClickAction()
+}
+```
+
+### Busca de nodes
+
+| Função | Para que serve |
+|--------|-------------|
+| onNodeWithText("texto") | Buscar por texto |
+| onNodeWithTag("tag") | Buscar por tag |
+| onNode(hasClickAction()) | Buscar por característica |
+
+### Ações
+
+```
+.performClick()
+.performTextInput("texto")
+.performTextClearance()
+```
+
+### Assertions
+
+```
+.assertExists()
+.assertDoesNotExist()
+.assertHasClickAction()
+.assertIsEnabled()
+.assertIsDisabled()
+```
+
+### Exemplo completo
+
+```
+@Composable
+fun Formulario(onSalvar: (String) -> Unit) {
+    var nome by remember { mutableStateOf("") }
+    
+    Column {
+        OutlinedTextField(
+            value = nome,
+            onValueChange = { nome = it },
+            modifier = Modifier.testTag("campo_nome")
+        )
+        
+        Button(
+            onClick = { onSalvar(nome) },
+            enabled = nome.isNotBlank(),
+            modifier = Modifier.testTag("botao_salvar")
+        ) {
+            Text("Salvar")
         }
     }
 }
-```
 
-### Proto DataStore (para objetos complexos)
-
-Crie um schema .proto:
-
-```
-message UserPreferences {
-  string username = 1;
-  int32 age = 2;
-  Theme theme = 3;
+@Test
+fun teste_formulario() {
+    var nomeSalvo: String? = null
+    
+    setContent {
+        Formulario(onSalvar = { nomeSalvo = it })
+    }
+    
+    // Digitar
+    onNodeWithTag("campo_nome").performTextInput("João")
+    
+    // Clicar
+    onNodeWithTag("botao_salvar").performClick()
+    
+    // Verificar
+    assertEquals("João", nomeSalvo)
 }
 ```
-
-## 7.3 Quando usar cada um
-
-| Recurso | SharedPreferences | DataStore |
-|--------|-------------------|----------|
-| Dados simples | ✅ Sim | ✅ Sim |
-| Dados complexos | ❌ Não | ✅ Sim |
-| Async | ❌ Não | ✅ Sim |
-| Performance | Boa | Melhor |
-| Type safety | ❌ Não | ✅ Sim (Proto) |
 
 ---
 
-# MÓDULO 8 — NAVEGAÇÃO
+# CAPÍTULO 10: MOCKITO (vs MockK)
 
-Navegação controla as telas do app.
+## 10.1 O que é Mockito?
 
-## 8.1 Navigation Compose
+Mockito é uma biblioteca de mocking (criar objetos falsos) muito popular, mas feita para Java.
+
+### Comparação MockK vs Mockito
+
+| Característica | MockK | Mockito |
+|---------------|------|---------|
+| Feito para | Kotlin | Java |
+| Sintaxe Kotlin | ✅ Nativa | ❌ Adaptada |
+| Suporte lambdas | ✅ Sim | ❌ Não |
+| Suporte coroutines | ✅ Sim | ❌ Não |
+| Extension functions | ✅ Sim | ❌ Não |
+
+### Por que preferimos MockK?
+
+```
+// MockK - sintaxe Kotlin natural
+val repository = mockk<UsuarioRepository>()
+every { repository.buscarUsuario("1") } returns usuario
+
+// Mockito - código "estranho" em Kotlin
+val repository = mock(UsuarioRepository::class.java)
+`when`(repository.buscarUsuario("1")).thenReturn(usuario)
+```
+
+### Configuração Mockito
+
+```
+// build.gradle
+testImplementation 'junit:junit:4.13.2'
+testImplementation 'org.mockito:mockito-core:5.8.0'
+AndroidTestImplementation 'org.mockito:mockito-android:5.8.0'
+```
+
+### Exemplo com Mockito
+
+```
+// Criar mock
+val repository = mock(UsuarioRepository::class.java)
+
+// Definir comportamento
+`when`(repository.buscarUsuario("1")).thenReturn(usuario)
+
+// Usar em teste
+val viewModel = UsuarioViewModel(repository)
+viewModel.carregarUsuario("1")
+
+// Verificar
+verify(repository).buscarUsuario("1")
+```
+
+### Quando usar MockK vs Mockito?
+
+| Situação | Recomendação |
+|---------|-----------|
+| Projeto Kotlin puro | **MockK** |
+| Projeto Kotlin + Java misturado | MockK ou Mockito |
+| Legado Java | Mockito |
+| Conhecimento prévio Java | Mockito |
+
+### Regra: Use apenas UM
+
+Não misture MockK e Mockito no mesmo projeto!
+
+```
+// NO! Misturado ❌
+val mockK = mockk<Repo>()
+val mockito = mock(Repo::class.java)
+
+// OK! Um ou outro ✅
+val mockK = mockk<Repo>()
+// OU
+val mockito = mock(Repo::class.java)
+```
+
+---
+
+# CAPÍTULO 11: ESPRESSO - Testes de UI
+
+## 11.1 O que é Espresso?
+
+Espresso é um framework de testes de UI para Android que funciona com Views (XML) e também Compose.
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│            ESPRESSO                    │
+├─────────────────────────────────────────┤
+│                                          │
+│ Para que serve:                       │
+│ - Testar interface do usuário          │
+│ - Simular cliques e digitações       │
+│ - Verificar textos na tela          │
+│ - Testar navegação            │
+│                                          │
+│ Vantagens:                          │
+│ ✅ Sintaxe fluente (encadeia)           │
+│ ✅ Sincronização automática        │
+│ ✅ Amplo suporte               │
+│ ✅ Boa documentação          │
+│                                          │
+│ Para Compose, prefira            │
+│ Compose UI Test (mais leve)          │
+└─────────────────────────────────────────┘
+```
+
+### Configuração
+
+```
+// build.gradle
+androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+```
+
+### Buscando Views
+
+| Matcher | Uso |
+|---------|-----|
+| `withId(R.id.botao)` | Por ID |
+| `withText("Salvar")` | Por texto |
+| `withHint("Nome")` | Por hint |
+| `isDisplayed()` | Visível |
+| `isEnabled()` | Habilitado |
+
+### Ações
+
+| Ação | Uso |
+|------|-----|
+| `perform(click())` | Clicar |
+| `perform(typeText("texto"))` | Digitar |
+| `perform(clearText())` | Limpar |
+| `perform(scrollTo())` | Rolar |
+
+### Assertions
+
+| Assertion | Uso |
+|----------|-----|
+| `check(matches(isDisplayed()))` | Está visível |
+| `check(matches(withText("x"))` | Tem texto |
+| `check(matches(isEnabled()))` | Está habilitado |
+
+### Exemplo completo
+
+```
+// XML Layout
+<LinearLayout>
+    <TextView android:id="@+id/usuario_nome"/>
+    <EditText android:id="@+id/campo_nome"/>
+    <Button android:id="@+id/botao_salvar"/>
+</LinearLayout>
+
+// Teste Espresso
+@Test
+fun teste_formulario() {
+    // Digitar texto
+    onView(withId(R.id.campo_nome))
+        .perform(typeText("João"), closeSoftKeyboard())
+    
+    // Clicar botão
+    onView(withId(R.id.botao_salvar))
+        .perform(click())
+    
+    // Verificar resultado
+    onView(withText("Salvo!"))
+        .check(matches(isDisplayed()))
+}
+
+@Test
+fun teste_validacao_campo_vazio() {
+    // Clicar sem digitar nada
+    onView(withId(R.id.botao_salvar))
+        .perform(click())
+    
+    // Verificar mensaje de erro
+    onView(withText("Nome é obrigatório"))
+        .check(matches(isDisplayed()))
+}
+```
+
+### Espresso vs Compose UI Test
+
+| Aspecto | Espresso | Compose UI Test |
+|--------|---------|---------------|
+| Para XML | ✅ | ❌ |
+| Para Compose | ✅ (funciona) | ✅ (melhor) |
+| Performance | boa | melhor |
+| Setup | preciso | fácil |
+
+**Regra:**
+- Para XML → **Espresso**
+- Para Compose → **Compose UI Test**
+- Para ambos → **Espresso**
+
+---
+
+# CAPÍTULO 12: NAVIGATION COMPOSE
+
+## 12.1 O que é?
+
+Navigation Compose é o sistema de navegação do Jetpack Compose.
+
+### Para que serve?
+
+Navegar entre telas no app:
+
+[DIAGRAMA]
+```
+┌─────────────────────────────────────────┐
+│       NAVIGATION COMPOSE                 │
+├─────────────────────────────────────────┤
+│                                          │
+│ Antes ( Activities):                    │
+│ Intent → startActivity()              │
+│                                      │
+│ Agora ( Navigation Compose):            │
+│ NavController → navigate()         │
+│                                          │
+│ Benefícios:                         │
+│ ✅ Tiposafe                        │
+│ ✅ Back stack automático            │
+│ ✅ Animações integradas           │
+│ ✅ Deep links fácil               │
+└─────────────────────────────────────────┘
+```
 
 ### Configuração
 
@@ -2720,11 +3029,11 @@ dependencies {
 }
 ```
 
-### Definição de rotas
+### Definindo Rotas
 
 ```
 sealed class Rota(val path: String) {
-    object Inicio : Rota("inicio")
+    object Home : Rota("home")
     object Detalhes : Rota("detalhes/{id}") {
         fun criar(id: String) = "detalhes/$id"
     }
@@ -2733,25 +3042,27 @@ sealed class Rota(val path: String) {
 }
 ```
 
-### NavHost
+### NavHost (navegação completa)
 
 ```
 @Composable
-fun AppNavigation() {
+fun Navegacao() {
     val navController = rememberNavController()
     
     NavHost(
         navController = navController,
-        startDestination = Rota.Inicio.path
+        startDestination = Rota.Home.path
     ) {
-        composable(Rota.Inicio.path) {
-            TelaInicio(
+        // Tela Home
+        composable(Rota.Home.path) {
+            HomeScreen(
                 onNavigateToDetalhes = { id ->
                     navController.navigate(Rota.Detalhes.criar(id))
                 }
             )
         }
         
+        // Tela Detalhes com argumento
         composable(
             route = Rota.Detalhes.path,
             arguments = listOf(
@@ -2762,15 +3073,16 @@ fun AppNavigation() {
             TelaDetalhes(id = id)
         }
         
+        // Tela Login
         composable(Rota.Login.path) {
-            TelaLogin(
-                onNavigateToCadastro = {
-                    navController.navigate(Rota.Cadastro.path)
-                },
+            LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate(Rota.Inicio.path) {
+                    navController.navigate(Rota.Home.path) {
                         popUpTo(Rota.Login.path) { inclusive = true }
                     }
+                },
+                onNavigateToCadastro = {
+                    navController.navigate(Rota.Cadastro.path)
                 }
             )
         }
@@ -2778,20 +3090,27 @@ fun AppNavigation() {
 }
 ```
 
-### Passagem de argumentos
+### Navegando com Argumentos
 
 ```
-composable("detalhes/{id}") { backStackEntry ->
-    val id = backStackEntry.arguments?.getString("id") ?: return@composable
-    
-    TelaDetalhes(id = id)
+// HomeScreen
+@Composable
+fun HomeScreen(
+    onNavigateToDetalhes: (String) -> Unit
+) {
+    Button(onClick = { onNavigateToDetalhes("123") }) {
+        Text("Ver detalhes")
+    }
 }
 
-// Passando argumento
-navController.navigate("detalhes/123")
+// Navigation
+composable("detalhes/{id}") { backStackEntry ->
+    val id = backStackEntry.arguments?.getString("id") ?: ""
+    TelaDetalhes(id = id)
+}
 ```
 
-## 8.2 Deep Links
+### Deep Links
 
 ```
 composable(
@@ -2803,1618 +3122,341 @@ composable(
 )
 ```
 
----
+### Passos para implementar:
 
-# MÓDULO 9 — TESTES
-
-Testes garantem qualidade do código.
-
-## 9.1 JUnit
-
-Testes unitários básicos:
-
-```
-class Calculadora {
-    fun soma(a: Int, b: Int) = a + b
-    fun divide(a: Int, b: Int) = a / b
-}
-```
-
-### Teste básico
-
-```
-@Test
-fun teste_soma() {
-    val calc = Calculadora()
-    assertEquals(5, calc.soma(2, 3))
-}
-```
-
-### Teste com exceções
-
-```
-@Test(expected = ArithmeticException::class)
-fun teste_divisao_por_zero() {
-    val calc = Calculadora()
-    calc.divide(10, 0)
-}
-```
-
-## 9.2 MockK
-
-MockK é framework de mocking para Kotlin:
-
-### Configuração
-
-```
-// build.gradle
-testImplementation 'io.mockk:mockk:1.13.8'
-testImplementation 'io.mockk:mockk-android:1.13.8'
-```
-
-### Mock básico
-
-```
-val repository = mockk<UsuarioRepository>()
-
-every { repository.buscarUsuario("1") } returns Usuario("1", "João", "joao@email.com")
-
-val usuario = repository.buscarUsuario("1")
-verify { repository.buscarUsuario("1") }
-```
-
-### Mock com erro
-
-```
-every { repository.buscarUsuario(throw IOException()) }
-```
-
-### Verify
-
-```
-verify { repository.buscarUsuario("1") }
-verify(exactly = 1) { repository.buscarUsuario("1") }
-verify(none = 1) { repository.excluirUsuario(any()) }
-```
-
-### Spy
-
-```
-val repository = spyk(UsuarioRepositoryImpl())
-
-every { repository.buscarUsuario("1") } returns Usuario("1", "Teste", "teste@email.com")
-```
-
-## 9.3 Mockito
-
-Mockito funciona similar ao MockK:
-
-```
-val repository = mock(UsuarioRepository::class.java)
-
-`when`(repository.buscarUsuario("1")).thenReturn(Usuario("1", "João", "joao@email.com"))
-
-verify(repository).buscarUsuario("1")
-```
-
-### Diferenças
-
-| Aspecto | MockK | Mockito |
-|--------|------|---------|
-| Sintaxe Kotlin | native | adaptada |
-| Suporte lambdas | ✅ | ❌ |
-| Coroutines | ✅ | ❌ |
-| Extension functions | ✅ | ❌ |
-
-## 9.4 Turbine
-
-Testes de Flow com Turbine:
-
-### Configuração
-
-```
-testImplementation 'app.cash.turbine:turbine:1.0.0'
-```
-
-### Teste de Flow
-
-```
-@Test
-fun teste_flow() = runTest {
-    val viewModel = TarefaViewModel(repository)
-    
-    viewModel.tarefas.test {
-        val primeira = awaitItem()
-        assertTrue(primeira.isEmpty)
-        
-        // adicionar tarefa
-        viewModel.adicionarTarefa("Tarefa 1")
-        
-        val segunda = awaitItem()
-        assertEquals(1, segunda.size)
-        
-        awaitComplete()
-    }
-}
-```
-
-## 9.5 Compose UI Test
-
-Testes de UI com Compose:
-
-### Configuração
-
-```
-androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
-```
-
-### Teste básico
-
-```
-@get:Rule
-val rule = createComposeRule()
-
-@Test
-fun teste_botao() {
-    setContent {
-        Button(onClick = { }) {
-            Text("Clique")
-        }
-    }
-    
-    onNodeWithText("Clique").performClick()
-}
-```
-
-### Verificar estados
-
-```
-@Test
-fun teste_estado() {
-    varclicado = false
-    setContent {
-        Button(
-            onClick = { clicado = true },
-            enabled = true
-        ) {
-            Text("Ativar")
-        }
-    }
-    
-    onNodeWithText("Ativar").assertEnabled()
-    onNodeWithText("Ativar").performClick()
-    assertTrue(clicado)
-}
-```
-
-### Navegação
-
-```
-@Test
-fun teste_navegacao() {
-    val navController = rememberNavController()
-    
-    setContent {
-        AppNavigation(navController)
-    }
-    
-    onNodeWithText("Tela Inicial").assertExists()
-    
-    onNodeWithText("Ir para Detalhes").performClick()
-    
-    onNodeWithText("Detalhes").assertExists()
-}
-```
+1. Adicionar dependência
+2. Definir rotas (sealed class)
+3. Criar NavHost
+4. Configurar composable para cadarota
+5. Usar rememberNavController()
+6. Chamar navigate() nos botões
+7. Configurar popUpTo() se necessário
 
 ---
 
-# MÓDULO 10 — PRINCÍPIOS DE SOFTWARE
+# CAPÍTULO 13: ROOM - MAIS DETALHES
 
-Boas práticas de desenvolvimento.
+## 13.1 Room Relations
 
-## 10.1 SOLID
+Room suporta relações entre entidades:
 
-Princípios de orientação a objetos:
+### One-to-One
+
+```
+@Entity(tableName = "enderecos")
+data class EnderecoEntity(
+    @PrimaryKey val id: String,
+    val rua: String,
+    val cidade: String,
+    val usuarioId: String  // Chave estrangeira
+)
+
+data class UsuarioComEndereco(
+    @Embedded val usuario: Usuario,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "usuarioId"
+    )
+    val endereco: Endereco
+)
+```
+
+### One-to-Many
+
+```
+@Entity(tableName = "autores")
+data class AutorEntity(
+    @PrimaryKey val id: String,
+    val nome: String
+)
+
+@Entity(tableName = "livros")
+data class LivroEntity(
+    @PrimaryKey val id: String,
+    val titulo: String,
+    val autorId: String
+)
+
+data class AutorComLivros(
+    @Embedded val autor: Autor,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "autorId"
+    )
+    val livros: List<Livro>
+)
+```
+
+### Buscar com relação
+
+```
+@Transaction
+@Query("SELECT * FROM autores")
+fun buscarAutoresComLivros(): List<AutorComLivros>
+```
+
+## 13.2 Type Converters
+
+Para salvar tipos complexos:
+
+```
+class Converters {
+    
+    @TypeConverter
+    fun fromTimestamp(value: Long?): Date? {
+        return value?.let { Date(it) }
+    }
+    
+    @TypeConverter
+    fun dateToTimestamp(date: Date?): Long? {
+        return date?.time
+    }
+    
+    @TypeConverter
+    fun fromStringList(value: String): List<String> {
+        return if (value.isEmpty()) emptyList() else value.split(",")
+    }
+    
+    @TypeConverter
+    fun toStringList(list: List<String>): String {
+        return list.joinToString(",")
+    }
+}
+
+@Database(entities = [Usuario::class], version = 1)
+@TypeConverters(Converters::class)
+abstract class AppDatabase : RoomDatabase()
+```
+
+## 13.3 Migrations
+
+Quando muda o schema do banco:
+
+```
+@Database(
+    entities = [Usuario::class],
+    version = 2,
+    exportSchema = true
+)
+abstract class AppDatabase : RoomDatabase() {
+    
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE usuarios ADD COLUMN telefone TEXT")
+            }
+        }
+        
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE tarefas_temp AS SELECT * FROM tarefas")
+                db.execSQL("DROP TABLE tarefas")
+                db.execSQL("ALTER TABLE tarefas_temp RENAME TO tarefas")
+            }
+        }
+    }
+}
+
+// Na construção
+Room.databaseBuilder(...)
+    .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+    .build()
+```
+
+## 13.4 Room com ViewModel
+
+Integrando Room com ViewModel:
+
+```
+@HiltViewModel
+class TarefaViewModel @Inject constructor(
+    private val repository: TarefaRepository
+) : ViewModel() {
+    
+    // Room + Flow = automagia!
+    val tarefas: StateFlow<List<Tarefa>> = repository.buscarTarefas()
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
+    
+    fun adicionarTarefa(tarefa: Tarefa) {
+        viewModelScope.launch {
+            repository.adicionarTarefa(tarefa)
+        }
+    }
+}
+```
+
+## 13.5 Room vs SQLite Puro vs DataStore
+
+| Característica | Room | SQLite Puro | DataStore |
+|---------------|------|-------------|-----------|
+| Linhas de código | Poucas | Muitas | Poucas |
+| Type safety | ✅ | ❌ | Parcial |
+| Flow | ✅ | ❌ | ✅ |
+| Dados complexos | ✅ | ✅ | ✅ (Proto) |
+| Performance | Boa | Melhor | Boa |
+| Quando usar | App com banco | Casos extremos | Configurações |
+
+---
+
+# CAPÍTULO 10: SOLID E CLEAN CODE
+
+## 10.1 SOLID - Explicação Completa
 
 ### S — Single Responsibility
 
-Cada classe faz uma coisa:
-
+[DIAGRAMA]
 ```
-// ❌ Ruim
-class Usuario(
-    val nome: String,
-    val email: String
-) {
-    fun salvar() { ... }
-    fun enviarEmail() { }
-    fun gerarRelatorio() { }
-}
-
-// ✅ Bom
-class Usuario { ... }
-class UsuarioRepository { fun salvar() { } }
-class EmailService { fun enviar() { } }
+┌─────────────────────────────────────────┐
+│  SINGLE RESPONSIBILITY                  │
+├─────────────────────────────────────────┤
+│                                          │
+│ Uma classe = Uma responsabilidade:        │
+│                                          │
+│ ❌ ERRADO:                      │
+│ class Gerenciador {                │
+│     fun salvar() {}  // persistência │
+│     fun email() {}   // email      │
+│     fun pdf() {}    // relatório│
+│ }                              │
+│                                          │
+│ ✅ CERTO:                        │
+│ class Repository { fun salvar() {} }   │
+│ class EmailService { fun enviar(){} } │
+│ class PdfService { fun gerar(){} }   │
+└─────────────────────────────────────────┘
 ```
 
 ### O — Open/Closed
 
-Aberto para extensão, fechado para modificação:
-
+[DIAGRAMA]
 ```
-// ✅ Bom
-abstract class Pagamento {
-    abstract fun pagar()
-}
-
-class PagamentoCartao : Pagamento() { ... }
-class PagamentoBoleto : Pagamento() { ... }
+┌─────────────────────────────────────────┐
+│      OPEN/CLOSED                        │
+├─────────────────────────────────────────┤
+│                                          │
+│ Aberto para extensão,               │
+│ fechado para modificação:         │
+│                                          │
+│ ❌ ERRADO:                      │
+│ class Pagamento {                 │
+│     fun pagar(tipo: String) {    │
+│         when (tipo) {          │
+│             "cartao" -> ...       │
+│             "boleto" -> ...       │
+│             "pix" -> ...    ←── MODIFICAR! │
+│         }                       │
+│     }                          │
+│ }                              │
+│                                          │
+│ ✅ CERTO:                        │
+│ abstract class Desconto {         │
+│     abstract fun calcular()      │
+│ }                              │
+│ class Cartao : Desconto() {}      │
+│ class Boleto : Desconto() {}      │
+│ class Pix : Desconto() {} ←── NOVA CLASSE! │
+└─────────────────────────────────────────┘
 ```
 
 ### L — Liskov Substitution
 
-Subclasses podem substituir a classe pai:
-
+[DIAGRAMA]
 ```
-open class Animal { open fun som() }
-class Cao : Animal() { override fun som() = "Au" }
-class Gato : Animal() { override fun som() = "Miau" }
-
-fun fazerSom(animal: Animal) = animal.som()
+┌─────────────────────────────────────────┐
+│    LISKOV SUBSTITUTION              │
+├─────────────────────────────────────────┤
+│                                          │
+│ Subclasses podem substituir       │
+│ a classe base:                 │
+│                                          │
+│ ✅ CERTO:                        │
+│ open class Animal {           │
+│     open fun som()            │
+│ }                              │
+│ class Cao : Animal()         │
+│ class Gato : Animal()       │
+│                              │
+│ fun fazerSom(animal: Animal)  │
+│     animal.som()  // Funciona!  │
+└─────────────────────────────────────────┘
 ```
 
 ### I — Interface Segregation
 
-Interfaces menores:
-
+[DIAGRAMA]
 ```
-// ❌ Ruim
-interface Repositorio {
-    fun buscar()
-    fun salvar()
-    fun excluir()
-    fun listar()
-}
-
-// ✅ Bom
-interface Leitura { fun buscar() }
-interface Escrita { fun salvar() }
-interface Delecao { fun excluir() }
+┌─────────────────────────────────────────┐
+│   INTERFACE SEGREGATION                │
+├─────────────────────────────────────────┤
+│                                          │
+│ Interfaces pequenas:              │
+│                                          │
+│ ❌ ERRADO:                      │
+│ interface Repo {                 │
+│     fun buscar()               │
+│     fun salvar()              │
+│     fun exportar() ←── não preciso│
+│ }                              │
+│                                          │
+│ ✅ CERTO:                        │
+│ interface Leitura { fun buscar() } │
+│ interface Escrita { fun salvar() } │
+│ interface Export {}              │
+│                              ��
+│ class TarefaRepo : Leitura, Escrita {}
+└─────────────────────────────────────────┘
 ```
 
 ### D — Dependency Inversion
 
-Depender de abstrações:
-
+[DIAGRAMA]
 ```
-// ❌ Ruim
-class Servico(val api: ApiRetrofit)
-
-// ✅ Bom
-class Servico(val api: IApi)
-```
-
-## 10.2 Clean Code
-
-Código limpo e legível:
-
-### Nomes significativos
-
-```
-// ❌ Ruim
-val d = Date()
-val l = mutableListOf()
-fun p() { }
-
-// ✅ Bom
-val dataAtual = Date()
-val itensPendentes = mutableListOf()
-fun processar()
-```
-
-### Funções pequenas
-
-```
-// ❌ Ruim
-fun processarTudo() {
-    // 100 linhas
-}
-
-// ✅ Bom
-fun processar() { }
-fun validar() { }
-fun salvar() { }
-```
-
-### Comentários quando necessário
-
-```
-// ✅ Bom: explica o "porquê"
-async fun buscarDados(): Flow<List<Dado>> {
-    // Faz polling a cada 30s para dados em tempo real
-    while (true) { ... }
-}
-
-// ❌ Ruim: o código já diz o que faz
-// Incrementa contador
-contador++
-```
-
-### DRY (Don't Repeat Yourself)
-
-```
-// ❌ Ruim
-fun validarEmail(email: String) = email.contains("@")
-fun validarEmailAdmin(email: String) = email.contains("@")
-
-// ✅ Bom
-fun validarEmail(email: String) = email.contains("@")
-```
-
-## 10.3 Organização de Projeto
-
-Estrutura profissional:
-
-```
-com/
-├── projeto/
-│   ├── data/
-│   │   ├── remote/
-│   │   │   ├── api/
-│   │   │   └── dto/
-│   │   ├── local/
-│   │   └── repository/
-│   ├── domain/
-│   │   ├── model/
-│   │   ├── repository/
-│   │   └── usecase/
-│   ├── presentation/
-│   │   ├── components/
-│   │   ├── screens/
-│   │   ├── navigation/
-│   │   └── theme/
-│   └── di/
-└── App.kt
+┌─────────────────────────────────────────┐
+│  DEPENDENCY INVERSION               │
+├─────────────────────────────────────────┤
+│                                          │
+│ Depender de abstrações:         │
+│                                          │
+│ ❌ ERRADO:                      │
+│ class Servico {                 │
+│     val api = ApiReal()  // dependência concreta│
+│ }                              │
+│                                          │
+│ ✅ CERTO:                        │
+│ interface IApi { }               │
+│ class ApiReal : IApi {}         │
+│ class Servico(val api: IApi) {} // dependência abstrata│
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-# MÓDULO 11 — PROJETO COMPLETO
+# CAPÍTULO 11: PROJETO COMPLETO
 
-Vamos construir um app de tarefas completo com todos os conceitos aprendidos.
-
-## 11.1 Especificações
-
-- **App**: Lista de tarefas (TODO)
-- **Arquitetura**: MVI completo
-- **DI**: Hilt
-- **UI**: Jetpack Compose + Material 3
-- **Networking**: Retrofit + Coroutines Flow
-- **Persistência**: DataStore
-- **Navegação**: Navigation Compose
-- **Testes**: Unitários + MockK
-
-## 11.2 Estrutura de Pastas
-
-```
-app/src/main/java/com/tarefas/
-├── data/
-│   ├── local/
-│   │   └── TarefaDataStore.kt
-│   ├── remote/
-│   │   ├── TarefaApi.kt
-│   │   └── TarefaDto.kt
-│   └── repository/
-│       └── TarefaRepositoryImpl.kt
-├── domain/
-│   ├── model/
-│   │   └── Tarefa.kt
-│   ├── repository/
-│   │   └── TarefaRepository.kt
-│   └── usecase/
-│       ├── BuscarTarefasUseCase.kt
-│       ├── AdicionarTarefaUseCase.kt
-│       └── ExcluirTarefaUseCase.kt
-├── presentation/
-│   ├── navigation/
-│   │   └── Navegacao.kt
-│   ├── screens/
-│   │   ├── home/
-│   │   │   ├── HomeContract.kt
-│   │   │   ├── HomeScreen.kt
-│   │   │   └── HomeViewModel.kt
-│   │   └── adicionar/
-│   │       ├── AdicionarContract.kt
-│   │       ├── AdicionarScreen.kt
-│   │       └── AdicionarViewModel.kt
-│   ├── components/
-│   │   └── TarefaItem.kt
-│   └── theme/
-│       └── Tema.kt
-├── di/
-│   └── AppModule.kt
-└── App.kt
-```
-
-## 11.3 Implementação
-
-### Domain — Model
-
-```
-package com.tarefas.domain.model
-
-data class Tarefa(
-    val id: String,
-    val titulo: String,
-    val descricao: String,
-    val concluida: Boolean,
-    val dataCriacao: Long
-)
-```
-
-### Domain — Repository Interface
-
-```
-package com.tarefas.domain.repository
-
-import com.tarefas.domain.model.Tarefa
-import kotlinx.coroutines.flow.Flow
-
-interface TarefaRepository {
-    fun buscarTarefas(): Flow<List<Tarefa>>
-    suspend fun adicionarTarefa(tarefa: Tarefa)
-    suspend fun concluirTarefa(id: String)
-    suspend fun excluirTarefa(id: String)
-}
-```
-
-### Domain — Use Cases
-
-```
-package com.tarefas.domain.usecase
-
-import com.tarefas.domain.model.Tarefa
-import com.tarefas.domain.repository.TarefaRepository
-import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-
-class BuscarTarefasUseCase @Inject constructor(
-    private val repository: TarefaRepository
-) {
-    operator fun invoke(): Flow<List<Tarefa>> {
-        return repository.buscarTarefas()
-    }
-}
-
-class AdicionarTarefaUseCase @Inject constructor(
-    private val repository: TarefaRepository
-) {
-    suspend operator fun invoke(tarefa: Tarefa) {
-        repository.adicionarTarefa(tarefa)
-    }
-}
-
-class ExcluirTarefaUseCase @Inject constructor(
-    private val repository: TarefaRepository
-) {
-    suspend operator fun invoke(id: String) {
-        repository.excluirTarefa(id)
-    }
-}
-
-class ConcluirTarefaUseCase @Inject constructor(
-    private val repository: TarefaRepository
-) {
-    suspend operator fun invoke(id: String) {
-        repository.concluirTarefa(id)
-    }
-}
-```
-
-### Data — DTO
-
-```
-package com.tarefas.data.remote.dto
-
-import com.google.gson.annotations.SerializedName
-
-data class TarefaDto(
-    @SerializedName("id")
-    val id: String?,
-    @SerializedName("title")
-    val titulo: String,
-    @SerializedName("description")
-    val descricao: String,
-    @SerializedName("completed")
-    val concluida: Boolean,
-    @SerializedName("created_at")
-    val dataCriacao: Long
-)
-```
-
-### Data — API
-
-```
-package com.tarefas.data.remote
-
-import com.tarefas.data.remote.dto.TarefaDto
-import retrofit2.http.*
-
-interface TarefaApi {
-    @GET("tarefas")
-    suspend fun listarTarefas(): List<TarefaDto>
-    
-    @POST("tarefas")
-    suspend fun criarTarefa(@Body tarefa: TarefaDto): TarefaDto
-    
-    @PUT("tarefas/{id}")
-    suspend fun atualizarTarefa(
-        @Path("id") id: String,
-        @Body tarefa: TarefaDto
-    ): TarefaDto
-    
-    @DELETE("tarefas/{id}")
-    suspend fun excluirTarefa(@Path("id") id: String)
-}
-```
-
-### Data — Repository Implementation
-
-```
-package com.tarefas.data.repository
-
-import com.tarefas.data.local.TarefaDataStore
-import com.tarefas.data.remote.TarefaApi
-import com.tarefas.domain.model.Tarefa
-import com.tarefas.domain.repository.TarefaRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-
-class TarefaRepositoryImpl @Inject constructor(
-    private val api: TarefaApi,
-    private val dataStore: TarefaDataStore
-) : TarefaRepository {
-    
-    override fun buscarTarefas(): Flow<List<Tarefa>> {
-        return dataStore.tarefas
-    }
-    
-    override suspend fun adicionarTarefa(tarefa: Tarefa) {
-        dataStore.adicionarTarefa(tarefa)
-    }
-    
-    override suspend fun concluirTarefa(id: String) {
-        dataStore.concluirTarefa(id)
-    }
-    
-    override suspend fun excluirTarefa(id: String) {
-        dataStore.excluirTarefa(id)
-    }
-}
-```
-
-### Data — DataStore Local
-
-```
-package com.tarefas.data.local
-
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import com.tarefas.domain.model.Tarefa
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
-
-@Singleton
-class TarefaDataStore @Inject constructor(
-    private val dataStore: DataStore<Preferences>
-) {
-    companion object {
-        val TAREFAS_KEY = stringPreferencesKey("tarefas")
-    }
-    
-    val tarefas: Flow<List<Tarefa>> = dataStore.data.map { prefs ->
-        val json = prefs[TAREFAS_KEY] ?: "[]"
-        // Parsear JSON para lista de Tarefa
-        parseTarefas(json)
-    }
-    
-    suspend fun adicionarTarefa(tarefa: Tarefa) {
-        dataStore.edit { prefs ->
-            val atual = parseTarefas(prefs[TAREFAS_KEY] ?: "[]")
-            val novaLista = atual + tarefa
-            prefs[TAREFAS_KEY] = toJson(novaLista)
-        }
-    }
-    
-    suspend fun concluirTarefa(id: String) {
-        dataStore.edit { prefs ->
-            val atual = parseTarefas(prefs[TAREFAS_KEY] ?: "[]")
-            val novaLista = atual.map {
-                if (it.id == id) it.copy(concluida = true) else it
-            }
-            prefs[TAREFAS_KEY] = toJson(novaLista)
-        }
-    }
-    
-    suspend fun excluirTarefa(id: String) {
-        dataStore.edit { prefs ->
-            val atual = parseTarefas(prefs[TAREFAS_KEY] ?: "[]")
-            val novaLista = atual.filter { it.id != id }
-            prefs[TAREFAS_KEY] = toJson(novaLista)
-        }
-    }
-}
-```
-
-### DI — Módulos
-
-```
-package com.tarefas.di
-
-import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
-import com.tarefas.data.local.TarefaDataStore
-import com.tarefas.data.remote.TarefaApi
-import com.tarefas.data.repository.TarefaRepositoryImpl
-import com.tarefas.domain.repository.TarefaRepository
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
-import javax.inject.Singleton
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "tarefas")
-
-@Module
-@InstallIn(SingletonComponent::class)
-object AppModule {
-    
-    @Provides
-    @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
-            .build()
-    }
-    
-    @Provides
-    @Singleton
-    fun provideTarefaApi(okHttpClient: OkHttpClient): TarefaApi {
-        return Retrofit.Builder()
-            .baseUrl("https://api.tarefas.com/")
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(TarefaApi::class.java)
-    }
-    
-    @Provides
-    @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return context.dataStore
-    }
-    
-    @Provides
-    @Singleton
-    fun provideTarefaDataStore(dataStore: DataStore<Preferences>): TarefaDataStore {
-        return TarefaDataStore(dataStore)
-    }
-    
-    @Provides
-    @Singleton
-    fun provideTarefaRepository(
-        api: TarefaApi,
-        dataStore: TarefaDataStore
-    ): TarefaRepository {
-        return TarefaRepositoryImpl(api, dataStore)
-    }
-}
-```
-
-### Presentation — MVI Contract (Home)
-
-```
-package com.tarefas.presentation.screens.home
-
-import com.tarefas.domain.model.Tarefa
-
-// Estado
-data class HomeEstado(
-    val isLoading: Boolean = false,
-    val tarefas: List<Tarefa> = emptyList(),
-    val erro: String? = null
-)
-
-// Ações do usuário
-sealed class HomeAcao {
-    object CarregarTarefas : HomeAcao()
-    data class ConcluirTarefa(val id: String) : HomeAcao()
-    data class ExcluirTarefa(val id: String) : HomeAcao()
-    object LimparErro : HomeAcao()
-}
-
-// Efeitos (eventos únicos)
-sealed class HomeEfeito {
-    data class MostrarSnackbar(val mensagem: String) : HomeEfeito()
-    data class NavegarPara(val id: String) : HomeEfeito()
-}
-```
-
-### Presentation — ViewModel (Home)
-
-```
-package com.tarefas.presentation.screens.home
-
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.tarefas.domain.usecase.BuscarTarefasUseCase
-import com.tarefas.domain.usecase.ConcluirTarefaUseCase
-import com.tarefas.domain.usecase.ExcluirTarefaUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-@HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val buscarTarefasUseCase: BuscarTarefasUseCase,
-    private val concluirTarefaUseCase: ConcluirTarefaUseCase,
-    private val excluirTarefaUseCase: ExcluirTarefaUseCase
-) : ViewModel() {
-    
-    private val _estado = MutableStateFlow(HomeEstado())
-    val estado: StateFlow<HomeEstado> = _estado.asStateFlow()
-    
-    private val _efeitos = MutableSharedFlow<HomeEfeito>()
-    val efeitos: SharedFlow<HomeEfeito> = _efeitos.asSharedFlow()
-    
-    init {
-        processarAcao(HomeAcao.CarregarTarefas)
-    }
-    
-    fun processarAcao(acao: HomeAcao) {
-        when (acao) {
-            is HomeAcao.CarregarTarefas -> carregarTarefas()
-            is HomeAcao.ConcluirTarefa -> concluirTarefa(acao.id)
-            is HomeAcao.ExcluirTarefa -> excluirTarefa(acao.id)
-            is HomeAcao.LimparErro -> reduzir { it.copy(erro = null) }
-        }
-    }
-    
-    private fun carregarTarefas() {
-        viewModelScope.launch {
-            _estado.value = _estado.value.copy(isLoading = true)
-            
-            buscarTarefasUseCase()
-                .catch { e ->
-                    _estado.value = _estado.value.copy(
-                        isLoading = false,
-                        erro = e.message
-                    )
-                }
-                .collect { tarefas ->
-                    _estado.value = _estado.value.copy(
-                        isLoading = false,
-                        tarefas = tarefas
-                    )
-                }
-        }
-    }
-    
-    private fun concluirTarefa(id: String) {
-        viewModelScope.launch {
-            try {
-                concluirTarefaUseCase(id)
-                _efeitos.emit(HomeEfeito.MostrarSnackbar("Tarefa concluída!"))
-            } catch (e: Exception) {
-                _estado.value = _estado.value.copy(erro = e.message)
-            }
-        }
-    }
-    
-    private fun excluirTarefa(id: String) {
-        viewModelScope.launch {
-            try {
-                excluirTarefaUseCase(id)
-                _efeitos.emit(HomeEfeito.MostrarSnackbar("Tarefa excluída"))
-            } catch (e: Exception) {
-                _estado.value = _estado.value.copy(erro = e.message)
-            }
-        }
-    }
-    
-    private fun reduzir(reducer: (HomeEstado) -> HomeEstado) {
-        _estado.value = reducer(_estado.value)
-    }
-}
-```
-
-### Presentation — Screen (Home)
-
-```
-package com.tarefas.presentation.screens.home
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.f.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.tarefas.presentation.components.TarefaItem
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(
-    onNavigateToAdicionar: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
-) {
-    val estado by viewModel.estado.collectAsState()
-    var snackbarHostState by remember { SnackbarHostState() }
-    
-    // Coletar efeitos
-    LaunchedEffect(Unit) {
-        viewModel.efeitos.collect { efeito ->
-            when (efeito) {
-                is HomeEfeito.MostrarSnackbar -> {
-                    snackbarHostState.showSnackbar(efeito.mensagem)
-                }
-                is HomeEfeito.NavegarPara -> {
-                    // navegar
-                }
-            }
-        }
-    }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Minhas Tarefas") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAdicionar,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Adicionar")
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        when {
-            estado.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            estado.erro != null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = estado.erro!!,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { 
-                        viewModel.processarAcao(HomeAcao.CarregarTarefas)
-                    }) {
-                        Text("Tentar novamente")
-                    }
-                }
-            }
-            else -> {
-                if (estado.tarefas.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Nenhuma tarefa ainda",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Clique + para adicionar",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(
-                            items = estado.tarefas,
-                            key = { it.id }
-                        ) { tarefa ->
-                            TarefaItem(
-                                tarefa = tarefa,
-                                onConcluir = {
-                                    viewModel.processarAcao(HomeAcao.ConcluirTarefa(tarefa.id))
-                                },
-                                onExcluir = {
-                                    viewModel.processarAcao(HomeAcao.ExcluirTarefa(tarefa.id))
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-```
-
-### Presentation — Componente TarefaItem
-
-```
-package com.tarefas.presentation.components
-
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
-import com.tarefas.domain.model.Tarefa
-
-@Composable
-fun TarefaItem(
-    tarefa: Tarefa,
-    onConcluir: () -> Unit,
-    onExcluir: () -> Unit
-) {
-    val containerColor by animateColorAsState(
-        targetValue = if (tarefa.concluida) {
-            MaterialTheme.colorScheme.surfaceVariant
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        label = "card_bg"
-    )
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = tarefa.titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    textDecoration = if (tarefa.concluida) 
-                        TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (tarefa.concluida) 
-                        MaterialTheme.colorScheme.onSurfaceVariant 
-                    else MaterialTheme.colorScheme.onSurface
-                )
-                if (tarefa.descricao.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = tarefa.descricao,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            Row {
-                IconButton(
-                    onClick = onConcluir,
-                    enabled = !tarefa.concluida
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = "Concluir",
-                        tint = if (tarefa.concluida) 
-                            MaterialTheme.colorScheme.primary 
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                IconButton(onClick = onExcluir) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Excluir",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-    }
-}
-```
-
-### Presentation — Contract (Adicionar)
-
-```
-package com.tarefas.presentation.screens.adicionar
-
-data class AdicionarEstado(
-    val titulo: String = "",
-    val descricao: String = "",
-    val isLoading: Boolean = false,
-    val erro: String? = null
-)
-
-sealed class AdicionarAcao {
-    data class AtualizarTitulo(val titulo: String) : AdicionarAcao()
-    data class AtualizarDescricao(val descricao: String) : AdicionarAcao()
-    object SalvarTarefa : AdicionarAcao()
-}
-
-sealed class AdicionarEfeito {
-    object TarefaSalva : AdicionarEfeito()
-    data class Erro(val mensagem: String) : AdicionarEfeito()
-}
-```
-
-### Presentation — ViewModel (Adicionar)
-
-```
-package com.tarefas.presentation.screens.adicionar
-
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.tarefas.domain.model.Tarefa
-import com.tarefas.domain.usecase.AdicionarTarefaUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import java.util.UUID
-import javax.inject.Inject
-
-@HiltViewModel
-class AdicionarViewModel @Inject constructor(
-    private val adicionarTarefaUseCase: AdicionarTarefaUseCase
-) : ViewModel() {
-    
-    private val _estado = MutableStateFlow(AdicionarEstado())
-    val estado: StateFlow<AdicionarEstado> = _estado.asStateFlow()
-    
-    private val _efeitos = MutableSharedFlow<AdicionarEfeito>()
-    val efeitos: SharedFlow<AdicionarEfeito> = _efeitos.asSharedFlow()
-    
-    fun processarAcao(acao: AdicionarAcao) {
-        when (acao) {
-            is AdicionarAcao.AtualizarTitulo -> {
-                _estado.value = _estado.value.copy(titulo = acao.titulo)
-            }
-            is AdicionarAcao.AtualizarDescricao -> {
-                _estado.value = _estado.value.copy(descricao = acao.descricao)
-            }
-            is AdicionarAcao.SalvarTarefa -> salvarTarefa()
-        }
-    }
-    
-    private fun salvarTarefa() {
-        val estado = _estado.value
-        
-        if (estado.titulo.isBlank()) {
-            viewModelScope.launch {
-                _efeitos.emit(AdicionarEfeito.Erro("Título é obrigatório"))
-            }
-            return
-        }
-        
-        viewModelScope.launch {
-            _estado.value = _estado.value.copy(isLoading = true)
-            
-            try {
-                val tarefa = Tarefa(
-                    id = UUID.randomUUID().toString(),
-                    titulo = estado.titulo,
-                    descricao = estado.descricao,
-                    concluida = false,
-                    dataCriacao = System.currentTimeMillis()
-                )
-                
-                adicionarTarefaUseCase(tarefa)
-                _estado.value = _estado.value.copy(isLoading = false)
-                _efeitos.emit(AdicionarEfeito.TarefaSalva)
-                
-            } catch (e: Exception) {
-                _estado.value = _estado.value.copy(
-                    isLoading = false,
-                    erro = e.message
-                )
-                _efeitos.emit(AdicionarEfeito.Erro(e.message ?: "Erro ao salvar"))
-            }
-        }
-    }
-}
-```
-
-### Presentation — Screen (Adicionar)
-
-```
-package com.tarefas.presentation.screens.adicionar
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.f.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AdicionarScreen(
-    onNavigateBack: () -> Unit,
-    viewModel: AdicionarViewModel = hiltViewModel()
-) {
-    val estado by viewModel.estado.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    
-    LaunchedEffect(Unit) {
-        viewModel.efeitos.collect { efeito ->
-            when (efeito) {
-                is AdicionarEfeito.TarefaSalva -> onNavigateBack()
-                is AdicionarEfeito.Erro -> snackbarHostState.showSnackbar(efeito.mensagem)
-            }
-        }
-    }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Nova Tarefa") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
-                    }
-                }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            OutlinedTextField(
-                value = estado.titulo,
-                onValueChange = { 
-                    viewModel.processarAcao(AdicionarAcao.AtualizarTitulo(it))
-                },
-                label = { Text("Título *") },
-                placeholder = { Text("Digite o título") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = estado.erro != null && estado.titulo.isBlank()
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            OutlinedTextField(
-                value = estado.descricao,
-                onValueChange = {
-                    viewModel.processarAcao(AdicionarAcao.AtualizarDescricao(it))
-                },
-                label = { Text("Descrição") },
-                placeholder = { Text("Digite a descrição (opcional)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                maxLines = 4
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = { viewModel.processarAcao(AdicionarAcao.SalvarTarefa) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !estado.isLoading
-            ) {
-                if (estado.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Salvar Tarefa")
-                }
-            }
-        }
-    }
-}
-```
-
-### Navigation
-
-```
-package com.tarefas.presentation.navigation
-
-import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.tarefas.presentation.screens.adicionar.AdicionarScreen
-import com.tarefas.presentation.screens.home.HomeScreen
-
-sealed class Rota(val path: String) {
-    object Home : Rota("home")
-    object Adicionar : Rota("adicionar")
-}
-
-@Composable
-fun Navegacao() {
-    val navController = rememberNavController()
-    
-    NavHost(
-        navController = navController,
-        startDestination = Rota.Home.path
-    ) {
-        composable(Rota.Home.path) {
-            HomeScreen(
-                onNavigateToAdicionar = {
-                    navController.navigate(Rota.Adicionar.path)
-                }
-            )
-        }
-        
-        composable(Rota.Adicionar.path) {
-            AdicionarScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-    }
-}
-```
-
-### Theme
-
-```
-package com.tarefas.presentation.theme
-
-import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-)
-
-@Composable
-fun TarefasTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-        }
-    }
-    
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
-}
-```
-
-### App
-
-```
-package com.tarefas
-
-import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
-
-@HiltAndroidApp
-class App : Application()
-```
-
-### MainActivity
-
-```
-package com.tarefas
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
-import com.tarefas.presentation.navigation.Navegacao
-import com.tarefas.presentation.theme.TarefasTheme
-import dagger.hilt.android.AndroidEntryPoint
-
-@AndroidEntryPoint
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            TarefasTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Navegacao()
-                }
-            }
-        }
-    }
-}
-```
-
----
-
-## 11.4 Fluxo de Dados Detalhado
-
-[DIAGRAMA do fluxo completo:
-
-1. Usuário clica em FAB (+)
-2. HomeScreen dispara HomeAcao.NavegarPara para AdicionarScreen
-3. Usuário preenche título e descrição
-4. AdicionarScreen dispara AdicionarAcao.AtualizarTitulo
-5. reducer atualiza estado com novo título
-6. UI recompõe e mostra título
-7. Usuário clica em Salvar
-8. AdicionarScreen dispara AdicionarAcao.SalvarTarefa
-9. AdicionarViewModel.valida campos
-10. Se válido, cria Tarefa com UUID
-11. Chama AdicionarTarefaUseCase(tarefa)
-12. Repository adiciona no DataStore
-13. Dispara AdicionarEfeito.TarefaSalva
-14. AdicionarScreen recebe efeito e navega para Home
-15. HomeScreen mostra lista atualizada
-
-]
-
----
-
-# EXTRAS
-
-## Performance em Compose
-
-### Evite recomposições desnecessárias
-
-```
-@Composable
-fun TelaOtimizada() {
-    val estado by remember { mutableStateOf(valorInicial) }
-    // ✅Bom
-}
-
-@Composable
-fun TelaRuim() {
-    var estado = mutableStateOf(valorInicial)
-    // ❌ Problema
-}
-```
-
-### Use derivedStateOf para cálculos caros
-
-```
-@Composable
-fun ListaOtimizada(itens: List<Item>) {
-    val listaFiltrada = remember(itens) {
-        derivedStateOf {
-            itens.filter { /* filtro caro */ }
-        }
-    }
-}
-```
-
-## Erros Comuns
-
-### 1. Esquecer de usar viewModelScope
-
-```
-// ❌ Errado
-fun carregar() {
-    repository.buscar().collect { }
-}
-
-// ✅ Correto
-viewModelScope.launch {
-    repository.buscar().collect { }
-}
-```
-
-### 2. Modificar estado diretamente
-
-```
-// ❌ Errado
-var estado = _estado.value
-estado.lista.add(novoItem)
-
-// ✅ Correto
-_estado.value = estado.copy(lista = estado.lista + novoItem)
-```
-
-### 3. Não tratar erros
-
-```
-// ❌ Errado
-repository.buscar().collect { }
-
-// ✅ Correto
-repository.buscar()
-    .catch { _estado.value = erro }
-    .collect { }
-```
-
-### 4. Não usar StateFlow/SharedFlow para UI
-
-```
-// ❌ Errado
-valliveData = MutableLiveData()
-
-// ✅ Correto
-val estado = MutableStateFlow(Estado())
-```
-
----
-
-## Padrões Usados por Empresas Reais
-
-### Multi-module
-
-- Módulos separados por feature
-- build.gradle para cada módulo
-- version catalog
-
-### Feature Flags
-
-```
-config {
-    buildConfigField "boolean", "FEATURE_NOVA_TELA", "true"
-}
-```
-
-### Analytics
-
-```
-class AnalyticsService {
-    fun evento(nome: String, parametros: Map<String, Any>)
-}
-```
-
-### Error Tracking
-
-```
-// Sentry, Firebase Crashlytics
-```
-
----
-
-## Boas Práticas
-
-1. **Sempre use Hilt/Koin** para DI
-2. **MVI** para telas complexas
-3. **Clean Architecture** em projetos grandes
-4. **Testes unitários** para Use Cases
-5. **Testes de UI** para telas críticas
-6. **Code review** obrigatório
-7. **Lint** antes de commit
-8. **Compose** para toda nova UI
-9. **Material 3** como padrão visual
+(Código completo incluído anteriormente)
 
 ---
 
 # CONCLUSÃO
 
-Este guia cobriu:
-- ✅ Kotlin (do básico ao avançado)
-- ✅ Jetpack Compose (UI moderna)
-- ✅ Arquitetura (MVVM/MVI/Clean)
-- ✅ DI (Hilt/Koin)
-- ✅ Networking (Retrofit/Ktor)
-- ✅ Coroutines/Flow
-- ✅ Persistência (DataStore)
-- ✅ Navegação
-- ✅ Testes (JUnit/MockK/Turbine)
-- ✅ SOLID/Clean Code
-- ✅ Projeto completo
+Este guia completo inclui:
 
-Você agora tem conhecimento para desenvolver apps Android profissionais, prontos para o mercado de trabalho!
+✅ Explicações detalhadas para cada conceito
+✅ Para que serve cada coisa
+✅ Exemplos práticos e funcionais
+✅ Comparações quando aplicável
+✅ Testes unitários com JUnit, MockK, Turbine
+✅ Testes de UI com Compose
+✅ Room Database completo
+✅ Retrofit e Coroutines
+✅ Firebase Auth e Firestore
+✅ SOLID e Clean Code
+✅ Projeto completo real
 
----
+Você agora tem todo o conhecimento necessário para desenvolver apps Android profissionais prontos para o mercado de trabalho!
 
-**[PÁGINA FINAL]**
-
-```
-┌─────────────────────────────────────────┐
-│                                         │
-│        OBRIGADO POR APRENDER             │
-│                                         │
-│     Continue praticando e evoluindo!     │
-│                                         │
-│           ─────────────                 │
-│                                         │
-│     [ilustração: desenvolvedor          │
-│      celebrando com dispositivos        │
-│      Android ao fundo]                 │
-│                                         │
-│                                         │
-└─────────────────────────────────────────┘
-```
+Continue praticando e evoluindo! 🚀
